@@ -77,16 +77,16 @@ export default function Features() {
               className="bg-gray-700/50 backdrop-blur-sm p-6 rounded-lg hover:shadow-lg hover:-translate-y-1 transition-all duration-300 border border-gray-700 group"
             >
               <div className="flex items-center mb-4">
-                <div className={`flex-shrink-0 p-2 rounded-md ${feature.bgColor} ${feature.hoverBgColor} transition-colors duration-300`}>
-                  {feature.icon}
+                <div className={`flex-shrink-0 p-2 rounded-md ${feature?.bgColor} ${feature?.hoverBgColor} transition-colors duration-300`}>
+                  {feature?.icon}
                 </div>
-                <h3 className="ml-3 text-lg font-semibold text-white">{feature.name}</h3>
+                <h3 className="ml-3 text-lg font-semibold text-white">{feature?.name}</h3>
               </div>
-              <p className="text-gray-300 text-sm leading-relaxed">{feature.content}</p>
-              {feature.badge && (
+              <p className="text-gray-300 text-sm leading-relaxed">{feature?.content}</p>
+              {feature?.badge && (
                 <div className="mt-3 flex items-center gap-2">
-                  <span className={`text-xs font-medium ${feature.badge.color}`}>{feature.badge.label}</span>
-                  <span className="text-xs text-gray-400">{feature.badge.subLabel}</span>
+                  <span className={`text-xs font-medium ${feature?.badge?.color}`}>{feature?.badge?.label}</span>
+                  <span className="text-xs text-gray-400">{feature?.badge?.subLabel}</span>
                 </div>
               )}
             </div>
