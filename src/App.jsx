@@ -11,6 +11,7 @@ import AllTasks from "./pages/adminPages/AllTasks";
 import Task from "./pages/adminPages/Task";
 import Pricing from "./pages/userPages/Pricing";
 import About from "./pages/userPages/About";
+import Features from "./pages/Features";
 export default function App() {
   return (
     <Router>
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="signup" element={<Signup />} />
           <Route path="pricing" element={<Pricing />} />
           <Route path="about" element={<About />} />
+          <Route path="features" element={<Features/>}></Route>
         </Route>
         <Route path="/dashboard" element={<AdminDashboard />}>
            <Route path="all-users" element={<AllUsers/>} />
