@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { FiUsers, FiSearch, FiPlus, FiEdit, FiTrash2, FiUser, FiMail, FiPhone, FiCalendar, FiTrash, FiChevronDown } from 'react-icons/fi';
-import { motion } from 'framer-motion';
+import { FiUsers, FiSearch, FiPlus, FiEdit, FiTrash2, FiUser, FiMail, FiPhone, FiCalendar, FiTrash, FiChevronDown, FiMoreVertical } from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Leads = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -18,22 +18,24 @@ const Leads = () => {
   const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
   const [isRemoveCourseModalOpen, setIsRemoveCourseModalOpen] = useState(false);
   const [isAddFieldModalOpen, setIsAddFieldModalOpen] = useState(false);
-  const [isRemoveFieldModalOpen, setIsRemoveFieldModalOpen] = useState(false);
-  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
-  const [updateLead, setUpdateLead] = useState({ id: null, name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
+  const [isUpdateFieldModalOpen, setIsUpdateFieldModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [leadToDelete, setLeadToDelete] = useState(null);
   const [selectedLeads, setSelectedLeads] = useState([]);
+  const [newLead, setNewLead] = useState({ name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
+  const [updateLead, setUpdateLead] = useState({ id: null, name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
   const [newCourseType, setNewCourseType] = useState('');
   const [selectedCoursesToRemove, setSelectedCoursesToRemove] = useState([]);
-  const [selectedFieldsToRemove, setSelectedFieldsToRemove] = useState([]);
   const [errors, setErrors] = useState({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [customFields, setCustomFields] = useState([]);
   const [newField, setNewField] = useState({ name: '', type: 'text', options: [], required: true });
+  const [updateField, setUpdateField] = useState({ name: '', type: 'text', options: [], required: true, originalName: '' });
   const [newOption, setNewOption] = useState('');
+  const [activeFieldDropdown, setActiveFieldDropdown] = useState(null);
   const dropdownRef = useRef(null);
+  const fieldDropdownRef = useRef(null);
 
   // Array for field type dropdown options
   const fieldTypeOptions = [
@@ -52,16 +54,14 @@ const Leads = () => {
     { value: 'dropdown', label: 'Dropdown' },
   ];
 
-  console.log(selectedLeads)
-
   // Define default fields for form handling
-  const defaultFields = [
+  const [defaultFields, setDefaultFields] = useState([
     { name: 'name', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     { name: 'phone', type: 'tel', required: true },
     { name: 'registeredDate', type: 'date', required: true },
     { name: 'courseName', type: 'dropdown', required: true, options: courseTypes },
-  ];
+  ]);
 
   // Mock data
   const [leads, setLeads] = useState([
@@ -74,16 +74,28 @@ const Leads = () => {
     { id: 7, name: 'Emma Davis', email: 'emma.davis@example.com', phone: '5551112222', registeredDate: '2025-07-10', courseName: null, courseType: null, customFields: {} },
   ]);
 
-  // Handle clicks outside dropdown to close it
+  // Handle clicks outside dropdowns to close them
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsDropdownOpen(false);
       }
+      if (fieldDropdownRef.current && !fieldDropdownRef.current.contains(event.target)) {
+        setActiveFieldDropdown(null);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Update courseName options when courseTypes change
+  useEffect(() => {
+    setDefaultFields((prev) =>
+      prev.map((field) =>
+        field.name === 'courseName' ? { ...field, options: courseTypes } : field
+      )
+    );
+  }, [courseTypes]);
 
   // Filter and sort leads
   const filteredLeads = leads
@@ -124,10 +136,10 @@ const Leads = () => {
         customFields: { ...prev.customFields, [fieldName]: e.target.value },
       }));
     } else if (fieldType === 'file') {
-      const fileName = e.target.files[0]?.name || ''; // Extract only the filename with extension
+      const file = e.target.files[0];
       setLead((prev) => ({
         ...prev,
-        customFields: { ...prev.customFields, [fieldName]: fileName },
+        customFields: { ...prev.customFields, [fieldName]: file ? file.name : '' },
       }));
     } else {
       const { value } = e.target;
@@ -155,106 +167,50 @@ const Leads = () => {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
+  // Handle update field input changes
+  const handleUpdateFieldChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setUpdateField((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+    setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
   // Handle adding options for radio/checkbox/dropdown fields
-  const handleAddOption = (e) => {
-    e.preventDefault();
-    if (newOption.trim() && !newField.options.some((opt) => opt.value === newOption.trim())) {
-      setNewField((prev) => ({
-        ...prev,
-        options: [...prev.options, { value: newOption.trim() }],
-      }));
-      setNewOption('');
-    }
+  const handleAddOption = (setField) => {
+    setField((prev) => {
+      if (newOption.trim() && !prev.options.some((opt) => opt.value === newOption.trim())) {
+        return {
+          ...prev,
+          options: [...prev.options, { value: newOption.trim() }],
+        };
+      }
+      return prev;
+    });
+    setNewOption('');
   };
 
   // Handle Enter key for adding options
-  const handleOptionKeyDown = (e) => {
+  const handleOptionKeyDown = (e, setField) => {
     if (e.key === 'Enter') {
-      handleAddOption(e);
+      e.preventDefault();
+      handleAddOption(setField);
     }
   };
 
   // Handle removing options
-  const handleRemoveOption = (optionValue) => {
-    setNewField((prev) => ({
+  const handleRemoveOption = (optionValue, setField) => {
+    setField((prev) => ({
       ...prev,
       options: prev.options.filter((opt) => opt.value !== optionValue),
     }));
   };
 
-  // Handle field remove selection
-  const handleFieldRemoveSelection = (fieldName) => {
-    setSelectedFieldsToRemove((prev) =>
-      prev.includes(fieldName)
-        ? prev.filter((name) => name !== fieldName)
-        : [...prev, fieldName]
-    );
-  };
-
-  // Handle removing fields
-  const handleRemoveFields = (e) => {
-    e.preventDefault();
-    setCustomFields((prev) => prev.filter((field) => !selectedFieldsToRemove.includes(field.name)));
-    setLeads((prevLeads) =>
-      prevLeads.map((lead) => {
-        const updatedLead = { ...lead, customFields: { ...lead.customFields } };
-        selectedFieldsToRemove.forEach((fieldName) => {
-          if (defaultFields.some((field) => field.name === fieldName)) {
-            delete updatedLead[fieldName];
-          } else {
-            delete updatedLead.customFields[fieldName];
-          }
-        });
-        return updatedLead;
-      })
-    );
-    setSelectedLeads((prevSelected) =>
-      prevSelected.map((lead) => {
-        const updatedLead = { ...lead, customFields: { ...lead.customFields } };
-        selectedFieldsToRemove.forEach((fieldName) => {
-          if (defaultFields.some((field) => field.name === fieldName)) {
-            delete updatedLead[fieldName];
-          } else {
-            delete updatedLead.customFields[fieldName];
-          }
-        });
-        return updatedLead;
-      })
-    );
-    setNewLead((prev) => {
-      const updatedLead = { ...prev, customFields: { ...prev.customFields } };
-      selectedFieldsToRemove.forEach((fieldName) => {
-        if (defaultFields.some((field) => field.name === fieldName)) {
-          delete updatedLead[fieldName];
-        } else {
-          delete updatedLead.customFields[fieldName];
-        }
-      });
-      return updatedLead;
-    });
-    setUpdateLead((prev) => {
-      const updatedLead = { ...prev, customFields: { ...prev.customFields } };
-      selectedFieldsToRemove.forEach((fieldName) => {
-        if (defaultFields.some((field) => field.name === fieldName)) {
-          delete updatedLead[fieldName];
-        } else {
-          delete updatedLead.customFields[fieldName];
-        }
-      });
-      return updatedLead;
-    });
-    setSelectedFieldsToRemove([]);
-    setErrors({});
-    setIsRemoveFieldModalOpen(false);
-  };
-
   // Validate Add Lead form
   const validateForm = () => {
     const newErrors = {};
-    const activeFields = [
-      ...defaultFields.filter((field) => !selectedFieldsToRemove.includes(field.name)),
-      ...customFields,
-    ];
+    const activeFields = [...defaultFields, ...customFields];
     activeFields.forEach((field) => {
       if (field.required) {
         if (defaultFields.some((df) => df.name === field.name)) {
@@ -289,6 +245,44 @@ const Leads = () => {
     return newErrors;
   };
 
+  // Validate Update Lead form
+  const validateUpdateForm = () => {
+    const newErrors = {};
+    const activeFields = [...defaultFields, ...customFields];
+    activeFields.forEach((field) => {
+      if (field.required) {
+        if (defaultFields.some((df) => df.name === field.name)) {
+          if (!updateLead[field.name]) {
+            newErrors[field.name] = `${field.name} is required`;
+          } else if (field.name === 'email' && !updateLead.email.match(/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/)) {
+            newErrors.email = 'Invalid email address';
+          } else if (field.name === 'phone' && !updateLead.phone.match(/^\d{10}$/)) {
+            newErrors.phone = 'Phone number must be 10 digits';
+          } else if (field.name === 'registeredDate' && !updateLead.registeredDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            newErrors.registeredDate = 'Date must be in YYYY-MM-DD format';
+          } else if (field.name === 'courseName' && !courseTypes.some((type) => type.value === updateLead.courseName)) {
+            newErrors.courseName = 'Invalid course selected';
+          }
+        } else {
+          if (field.type === 'checkbox' && (!updateLead.customFields[field.name] || updateLead.customFields[field.name].length === 0)) {
+            newErrors[field.name] = `${field.name} requires at least one selection`;
+          } else if (field.type === 'dropdown' && !updateLead.customFields[field.name]) {
+            newErrors[field.name] = `${field.name} is required`;
+          } else if (field.type === 'tel' && updateLead.customFields[field.name] && !updateLead.customFields[field.name].match(/^\d{10}$/)) {
+            newErrors[field.name] = `${field.name} must be a 10-digit phone number`;
+          } else if (field.type === 'url' && updateLead.customFields[field.name] && !updateLead.customFields[field.name].match(/^https?:\/\/[^\s$.?#].[^\s]*$/)) {
+            newErrors[field.name] = `${field.name} must be a valid URL`;
+          } else if (!['checkbox', 'dropdown', 'tel', 'url', 'file'].includes(field.type) && !updateLead.customFields[field.name]) {
+            newErrors[field.name] = `${field.name} is required`;
+          } else if (field.type === 'file' && !updateLead.customFields[field.name]) {
+            newErrors[field.name] = `${field.name} is required`;
+          }
+        }
+      }
+    });
+    return newErrors;
+  };
+
   // Validate Add Course form
   const validateCourseForm = () => {
     const newErrors = {};
@@ -297,10 +291,10 @@ const Leads = () => {
   };
 
   // Validate Add Field form
-  const validateFieldForm = () => {
+  const validateFieldForm = (field) => {
     const newErrors = {};
-    if (!newField.name.trim()) newErrors.name = 'Field name is required';
-    if (['radio', 'checkbox', 'dropdown'].includes(newField.type) && newField.options.length === 0) {
+    if (!field.name.trim()) newErrors.name = 'Field name is required';
+    if (['radio', 'checkbox', 'dropdown'].includes(field.type) && field.options.length === 0) {
       newErrors.options = 'At least one option is required for radio, checkbox, or dropdown fields';
     }
     return newErrors;
@@ -331,8 +325,8 @@ const Leads = () => {
       setErrors(formErrors);
       return;
     }
-    const newCourse = { value: newCourseType };
-    if (!courseTypes.some((type) => type.value === newCourseType)) {
+    const newCourse = { value: newCourseType.trim() };
+    if (!courseTypes.some((type) => type.value === newCourseType.trim())) {
       setCourseTypes([...courseTypes, newCourse]);
     }
     setNewCourseType('');
@@ -344,7 +338,7 @@ const Leads = () => {
   // Handle adding a new custom field
   const handleAddField = (e) => {
     e.preventDefault();
-    const formErrors = validateFieldForm();
+    const formErrors = validateFieldForm(newField);
     if (Object.keys(formErrors).length > 0) {
       setErrors(formErrors);
       return;
@@ -363,6 +357,111 @@ const Leads = () => {
     setNewOption('');
     setErrors({});
     setIsAddFieldModalOpen(false);
+  };
+
+  // Handle updating a field
+  const handleUpdateField = (e) => {
+    e.preventDefault();
+    const formErrors = validateFieldForm(updateField);
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
+      return;
+    }
+    const { originalName, ...updatedFieldData } = updateField;
+    setCustomFields((prev) =>
+      prev.map((field) =>
+        field.name === originalName ? updatedFieldData : field
+      )
+    );
+    setDefaultFields((prev) =>
+      prev.map((field) =>
+        field.name === originalName ? updatedFieldData : field
+      )
+    );
+    setLeads((prevLeads) =>
+      prevLeads.map((lead) => {
+        const updatedCustomFields = { ...lead.customFields };
+        if (updatedCustomFields[originalName]) {
+          updatedCustomFields[updateField.name] = updatedCustomFields[originalName];
+          delete updatedCustomFields[originalName];
+        } else if (defaultFields.some((df) => df.name === originalName)) {
+          lead[updateField.name] = lead[originalName];
+          delete lead[originalName];
+        }
+        return {
+          ...lead,
+          customFields: updatedCustomFields,
+        };
+      })
+    );
+    setNewLead((prev) => {
+      const updatedCustomFields = { ...prev.customFields };
+      if (updatedCustomFields[originalName]) {
+        updatedCustomFields[updateField.name] = updatedCustomFields[originalName];
+        delete updatedCustomFields[originalName];
+      } else if (defaultFields.some((df) => df.name === originalName)) {
+        prev[updateField.name] = prev[originalName];
+        delete prev[originalName];
+      }
+      return {
+        ...prev,
+        customFields: updatedCustomFields,
+      };
+    });
+    setUpdateLead((prev) => {
+      const updatedCustomFields = { ...prev.customFields };
+      if (updatedCustomFields[originalName]) {
+        updatedCustomFields[updateField.name] = updatedCustomFields[originalName];
+        delete updatedCustomFields[originalName];
+      } else if (defaultFields.some((df) => df.name === originalName)) {
+        prev[updateField.name] = prev[originalName];
+        delete prev[originalName];
+      }
+      return {
+        ...prev,
+        customFields: updatedCustomFields,
+      };
+    });
+    setUpdateField({ name: '', type: 'text', options: [], required: true, originalName: '' });
+    setNewOption('');
+    setErrors({});
+    setIsUpdateFieldModalOpen(false);
+  };
+
+  // Handle deleting a field
+  const handleDeleteField = (fieldName) => {
+    setCustomFields((prev) => prev.filter((field) => field.name !== fieldName));
+    setDefaultFields((prev) => prev.filter((field) => field.name !== fieldName));
+    setLeads((prevLeads) =>
+      prevLeads.map((lead) => {
+        const updatedLead = { ...lead, customFields: { ...lead.customFields } };
+        if (defaultFields.some((field) => field.name === fieldName)) {
+          delete updatedLead[fieldName];
+        } else {
+          delete updatedLead.customFields[fieldName];
+        }
+        return updatedLead;
+      })
+    );
+    setNewLead((prev) => {
+      const updatedLead = { ...prev, customFields: { ...prev.customFields } };
+      if (defaultFields.some((field) => field.name === fieldName)) {
+        delete updatedLead[fieldName];
+      } else {
+        delete updatedLead.customFields[fieldName];
+      }
+      return updatedLead;
+    });
+    setUpdateLead((prev) => {
+      const updatedLead = { ...prev, customFields: { ...prev.customFields } };
+      if (defaultFields.some((field) => field.name === fieldName)) {
+        delete updatedLead[fieldName];
+      } else {
+        delete updatedLead.customFields[fieldName];
+      }
+      return updatedLead;
+    });
+    setActiveFieldDropdown(null);
   };
 
   // Handle course remove selection
@@ -457,6 +556,7 @@ const Leads = () => {
     setIsAddModalOpen(false);
     setNewLead({ name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
     setErrors({});
+    setActiveFieldDropdown(null);
   };
 
   const resetUpdateModal = () => {
@@ -492,9 +592,10 @@ const Leads = () => {
     setErrors({});
   };
 
-  const resetRemoveFieldModal = () => {
-    setIsRemoveFieldModalOpen(false);
-    setSelectedFieldsToRemove([]);
+  const resetUpdateFieldModal = () => {
+    setIsUpdateFieldModalOpen(false);
+    setUpdateField({ name: '', type: 'text', options: [], required: true, originalName: '' });
+    setNewOption('');
     setErrors({});
   };
 
@@ -512,49 +613,20 @@ const Leads = () => {
     setIsDropdownOpen(false);
   };
 
-  // Validate Update Lead form
-  const validateUpdateForm = () => {
-    const newErrors = {};
-    const activeFields = [
-      ...defaultFields.filter((field) => !selectedFieldsToRemove.includes(field.name)),
-      ...customFields,
-    ];
-    activeFields.forEach((field) => {
-      if (field.required) {
-        if (defaultFields.some((df) => df.name === field.name)) {
-          if (!updateLead[field.name]) {
-            newErrors[field.name] = `${field.name} is required`;
-          } else if (field.name === 'email' && !updateLead.email.match(/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/)) {
-            newErrors.email = 'Invalid email address';
-          } else if (field.name === 'phone' && !updateLead.phone.match(/^\d{10}$/)) {
-            newErrors.phone = 'Phone number must be 10 digits';
-          } else if (field.name === 'registeredDate' && !updateLead.registeredDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            newErrors.registeredDate = 'Date must be in YYYY-MM-DD format';
-          } else if (field.name === 'courseName' && !courseTypes.some((type) => type.value === updateLead.courseName)) {
-            newErrors.courseName = 'Invalid course selected';
-          }
-        } else {
-          if (field.type === 'checkbox' && (!updateLead.customFields[field.name] || updateLead.customFields[field.name].length === 0)) {
-            newErrors[field.name] = `${field.name} requires at least one selection`;
-          } else if (field.type === 'dropdown' && !updateLead.customFields[field.name]) {
-            newErrors[field.name] = `${field.name} is required`;
-          } else if (field.type === 'tel' && updateLead.customFields[field.name] && !updateLead.customFields[field.name].match(/^\d{10}$/)) {
-            newErrors[field.name] = `${field.name} must be a 10-digit phone number`;
-          } else if (field.type === 'url' && updateLead.customFields[field.name] && !updateLead.customFields[field.name].match(/^https?:\/\/[^\s$.?#].[^\s]*$/)) {
-            newErrors[field.name] = `${field.name} must be a valid URL`;
-          } else if (!['checkbox', 'dropdown', 'tel', 'url', 'file'].includes(field.type) && !updateLead.customFields[field.name]) {
-            newErrors[field.name] = `${field.name} is required`;
-          } else if (field.type === 'file' && !updateLead.customFields[field.name]) {
-            newErrors[field.name] = `${field.name} is required`;
-          }
-        }
-      }
-    });
-    return newErrors;
+  // Handle field dropdown actions
+  const handleFieldAction = (fieldName, action) => {
+    if (action === 'update') {
+      const field = [...defaultFields, ...customFields].find((f) => f.name === fieldName);
+      setUpdateField({ ...field, originalName: fieldName });
+      setIsUpdateFieldModalOpen(true);
+    } else if (action === 'delete') {
+      handleDeleteField(fieldName);
+    }
+    setActiveFieldDropdown(null);
   };
 
   // Active fields for table and form rendering
-  const activeFields = defaultFields.filter((field) => !selectedFieldsToRemove.includes(field.name));
+  const activeFields = [...defaultFields, ...customFields];
 
   return (
     <div className="p-4 sm:p-6 space-y-6 bg-gray-900 min-h-screen">
@@ -704,11 +776,6 @@ const Leads = () => {
                       </div>
                     </th>
                   ))}
-                  {customFields.filter((field) => !selectedFieldsToRemove.includes(field.name)).map((field) => (
-                    <th key={field.name} className="p-4 text-left">
-                      <span>{field.name.charAt(0).toUpperCase() + field.name.slice(1)}</span>
-                    </th>
-                  ))}
                   <th className="p-4 text-left">
                     <span>Actions</span>
                   </th>
@@ -717,7 +784,7 @@ const Leads = () => {
               <tbody className="divide-y divide-gray-700 max-h-[70vh] overflow-y-auto">
                 {filteredLeads.length === 0 ? (
                   <tr>
-                    <td colSpan={activeFields.length + customFields.filter((field) => !selectedFieldsToRemove.includes(field.name)).length + 2} className="p-4 text-center text-gray-400 text-sm sm:text-base">
+                    <td colSpan={activeFields.length + 1} className="p-4 text-center text-gray-400 text-sm sm:text-base">
                       No leads found.
                     </td>
                   </tr>
@@ -744,12 +811,9 @@ const Leads = () => {
                             ? lead[field.name] ? new Date(lead[field.name]).toLocaleDateString() : 'Not registered'
                             : field.name === 'courseName'
                             ? lead[field.name] || 'No course'
-                            : lead[field.name] || 'Not provided'}
-                        </td>
-                      ))}
-                      {customFields.filter((field) => !selectedFieldsToRemove.includes(field.name)).map((field) => (
-                        <td key={field.name} className="p-4">
-                          {field.type === 'checkbox' && Array.isArray(lead.customFields[field.name])
+                            : defaultFields.some((df) => df.name === field.name)
+                            ? lead[field.name] || 'Not provided'
+                            : field.type === 'checkbox' && Array.isArray(lead.customFields[field.name])
                             ? lead.customFields[field.name].join(', ') || 'Not provided'
                             : lead.customFields[field.name] || 'Not provided'}
                         </td>
@@ -806,139 +870,159 @@ const Leads = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700 w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-4">Add New Lead</h3>
             <form onSubmit={handleAddLead} className="space-y-4">
-              {activeFields.map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm text-gray-300">
-                    {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  {field.name === 'courseName' ? (
-                    <select
-                      name="courseName"
-                      value={newLead.courseName}
-                      onChange={(e) => handleInputChange(e, setNewLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    >
-                      <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
-                      {courseTypes.map((type) => (
-                        <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="relative">
-                      {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        value={newLead[field.name] || ''}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {activeFields.map((field) => (
+                  <div key={field.name} className="relative">
+                    <label className="block text-sm text-gray-300">
+                      {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
+                    </label>
+                    {field.name === 'courseName' ? (
+                      <select
+                        name="courseName"
+                        value={newLead.courseName}
                         onChange={(e) => handleInputChange(e, setNewLead)}
-                        placeholder={field.name === 'phone' ? '1234567890' : undefined}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                      >
+                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
+                        {courseTypes.map((type) => (
+                          <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
+                        ))}
+                      </select>
+                    ) : field.type === 'checkbox' ? (
+                      <div className="space-y-2">
+                        {field.options.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              name={field.name}
+                              value={option.value}
+                              checked={newLead.customFields[field.name]?.includes(option.value) || false}
+                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                            />
+                            <label className="text-sm text-gray-300">{option.value}</label>
+                          </div>
+                        ))}
+                      </div>
+                    ) : field.type === 'radio' ? (
+                      <div className="space-y-2">
+                        {field.options.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={option.value}
+                              checked={newLead.customFields[field.name] === option.value}
+                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                            />
+                            <label className="text-sm text-gray-300">{option.value}</label>
+                          </div>
+                        ))}
+                      </div>
+                    ) : field.type === 'dropdown' ? (
+                      <select
+                        name={field.name}
+                        value={newLead.customFields[field.name] || ''}
+                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                      >
+                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
+                        {field.options.map((option) => (
+                          <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
+                            {option.value}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        name={field.name}
+                        value={newLead.customFields[field.name] || ''}
+                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        rows="4"
                       />
+                    ) : field.type === 'file' ? (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          name={field.name}
+                          onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                          className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        />
+                        {newLead.customFields[field.name] && (
+                          <p className="text-gray-300 text-xs mt-1">Selected: {newLead.customFields[field.name]}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          value={defaultFields.some((df) => df.name === field.name) ? newLead[field.name] || '' : newLead.customFields[field.name] || ''}
+                          onChange={(e) => defaultFields.some((df) => df.name === field.name) ? handleInputChange(e, setNewLead) : handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                          placeholder={field.name === 'phone' ? '1234567890' : undefined}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        />
+                      </div>
+                    )}
+                    {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
+                    <div className="absolute right-0 top-0" ref={fieldDropdownRef}>
+                      <motion.button
+                        type="button"
+                        onClick={() => setActiveFieldDropdown(activeFieldDropdown === field.name ? null : field.name)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-2 rounded-full bg-gray-700/50 hover:bg-gray-600 transition-colors"
+                      >
+                        <FiMoreVertical className="text-gray-200" />
+                      </motion.button>
+                      <AnimatePresence>
+                        {activeFieldDropdown === field.name && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute z-10 right-0 mt-2 w-48 rounded-lg bg-gray-800/90 border border-gray-700 shadow-lg"
+                          >
+                            <div
+                              onClick={() => handleFieldAction(field.name, 'update')}
+                              className="px-4 py-2 text-gray-200 hover:bg-blue-600 cursor-pointer bg-blue-500 text-sm sm:text-base"
+                            >
+                              Update Field
+                            </div>
+                            <div
+                              onClick={() => handleFieldAction(field.name, 'delete')}
+                              className="px-4 py-2 text-gray-200 hover:bg-red-600 cursor-pointer bg-red-500 text-sm sm:text-base"
+                            >
+                              Delete Field
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
-                  )}
-                  {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
-                </div>
-              ))}
-              {customFields.filter((field) => !selectedFieldsToRemove.includes(field.name)).map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm text-gray-300">
-                    {field.name} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  {field.type === 'checkbox' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option) => (
-                        <div key={option.value} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            name={field.name}
-                            value={option.value}
-                            checked={newLead.customFields[field.name]?.includes(option.value) || false}
-                            onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                            className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                          />
-                          <label className="text-sm text-gray-300">{option.value}</label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'radio' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option) => (
-                        <div key={option.value} className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name={field.name}
-                            value={option.value}
-                            checked={newLead.customFields[field.name] === option.value}
-                            onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                            className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                          />
-                          <label className="text-sm text-gray-300">{option.value}</label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'dropdown' ? (
-                    <select
-                      name={field.name}
-                      value={newLead.customFields[field.name] || ''}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    >
-                      <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
-                      {field.options.map((option) => (
-                        <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
-                          {option.value}
-                        </option>
-                      ))}
-                    </select>
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      name={field.name}
-                      value={newLead.customFields[field.name] || ''}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                      rows="4"
-                    />
-                  ) : (
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    />
-                  )}
-                  {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
               <div className="flex justify-between pt-4">
-                <div className="flex space-x-2">
-                  <motion.button
-                    type="button"
-                    onClick={() => setIsAddFieldModalOpen(true)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors text-sm sm:text-base"
-                  >
-                    <FiPlus className="text-lg" />
-                    <span>Add Field</span>
-                  </motion.button>
-                  <motion.button
-                    type="button"
-                    onClick={() => setIsRemoveFieldModalOpen(true)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-br from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 transition-colors text-sm sm:text-base"
-                  >
-                    <FiTrash className="text-lg" />
-                    <span>Remove Field</span>
-                  </motion.button>
-                </div>
+                <motion.button
+                  type="button"
+                  onClick={() => setIsAddFieldModalOpen(true)}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors text-sm sm:text-base"
+                >
+                  <FiPlus className="text-lg" />
+                  <span>Add Field</span>
+                </motion.button>
                 <div className="flex space-x-2">
                   <button
                     type="button"
@@ -959,7 +1043,7 @@ const Leads = () => {
           </motion.div>
         </motion.div>
       )}
-      {/* Add Field Modal */}
+
       {isAddFieldModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -1015,7 +1099,7 @@ const Leads = () => {
                         <span className="text-gray-200 text-sm sm:text-base flex-1">{option.value}</span>
                         <motion.button
                           type="button"
-                          onClick={() => handleRemoveOption(option.value)}
+                          onClick={() => handleRemoveOption(option.value, setNewField)}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           className="p-1 rounded-full bg-gray-700/50 hover:bg-red-600 transition-colors"
@@ -1029,10 +1113,19 @@ const Leads = () => {
                         type="text"
                         value={newOption}
                         onChange={(e) => setNewOption(e.target.value)}
-                        onKeyDown={handleOptionKeyDown}
+                        onKeyDown={(e) => handleOptionKeyDown(e, setNewField)}
                         placeholder="Add option (press Enter)"
                         className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                       />
+                      <motion.button
+                        type="button"
+                        onClick={() => handleAddOption(setNewField)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors"
+                      >
+                        <FiPlus className="text-lg" />
+                      </motion.button>
                     </div>
                     {errors.options && <p className="text-red-500 text-xs mt-1">{errors.options}</p>}
                   </div>
@@ -1068,7 +1161,7 @@ const Leads = () => {
         </motion.div>
       )}
 
-      {isRemoveFieldModalOpen && (
+      {isUpdateFieldModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1081,49 +1174,103 @@ const Leads = () => {
             exit={{ scale: 0.8, opacity: 0 }}
             className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700 w-full max-w-md max-h-[80vh] overflow-y-auto"
           >
-            <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-4">Remove Fields</h3>
-            <form onSubmit={handleRemoveFields} className="space-y-4">
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-4">Update Field</h3>
+            <form onSubmit={handleUpdateField} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-2">
-                  Select fields to remove
+                <label className="block text-sm text-gray-300 mb-1">Field Type</label>
+                <select
+                  name="type"
+                  value={updateField.type}
+                  onChange={handleUpdateFieldChange}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                >
+                  {fieldTypeOptions.map((option) => (
+                    <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm text-gray-300 mb-1">
+                  Field Name <span className="text-red-500">*</span>
                 </label>
-                {customFields.length > 0 ? (
-                  <ul className="space-y-2 max-h-64 overflow-y-auto">
-                    {customFields.map((field) => (
-                      <li key={field.name} className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={selectedFieldsToRemove.includes(field.name)}
-                          onChange={() => handleFieldRemoveSelection(field.name)}
-                          className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                        />
-                        <span className="text-sm text-gray-300">{field.name}</span>
-                      </li>
+                <input
+                  type="text"
+                  name="name"
+                  value={updateField.name}
+                  onChange={handleUpdateFieldChange}
+                  placeholder="Enter field name"
+                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              </div>
+              {['radio', 'checkbox', 'dropdown'].includes(updateField.type) && (
+                <div>
+                  <label className="block text-sm text-gray-300 mb-1">
+                    Options <span className="text-red-500">*</span>
+                  </label>
+                  <div className="space-y-2">
+                    {updateField.options.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <span className="text-gray-200 text-sm sm:text-base flex-1">{option.value}</span>
+                        <motion.button
+                          type="button"
+                          onClick={() => handleRemoveOption(option.value, setUpdateField)}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          className="p-1 rounded-full bg-gray-700/50 hover:bg-red-600 transition-colors"
+                        >
+                          <FiTrash className="text-gray-200" />
+                        </motion.button>
+                      </div>
                     ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-400 text-sm">No custom fields available.</p>
-                )}
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={newOption}
+                        onChange={(e) => setNewOption(e.target.value)}
+                        onKeyDown={(e) => handleOptionKeyDown(e, setUpdateField)}
+                        placeholder="Add option (press Enter)"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                      />
+                      <motion.button
+                        type="button"
+                        onClick={() => handleAddOption(setUpdateField)}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors"
+                      >
+                        <FiPlus className="text-lg" />
+                      </motion.button>
+                    </div>
+                    {errors.options && <p className="text-red-500 text-xs mt-1">{errors.options}</p>}
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  name="required"
+                  checked={updateField.required}
+                  onChange={handleUpdateFieldChange}
+                  className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                />
+                <label className="text-sm text-gray-300">Required</label>
               </div>
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
-                  onClick={resetRemoveFieldModal}
+                  onClick={resetUpdateFieldModal}
                   className="px-4 py-2 rounded-lg bg-red-700 text-gray-200 hover:bg-red-600 transition-colors text-sm sm:text-base"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={selectedFieldsToRemove.length === 0}
-                  className={`px-4 py-2 rounded-lg text-white transition-colors text-sm sm:text-base ${
-                    selectedFieldsToRemove.length === 0
-                      ? 'bg-gray-600 cursor-not-allowed'
-                      : 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
-                  }`}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:from-indigo-600 hover:to-purple-700 transition-colors text-sm sm:text-base"
                 >
-                  <FiTrash className="inline mr-2" />
-                  Remove
+                  Update Field
                 </button>
               </div>
             </form>
@@ -1142,116 +1289,114 @@ const Leads = () => {
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700 w-full max-w-md sm:max-w-lg max-h-[80vh] overflow-y-auto"
+            className="bg-gray-900 p-4 sm:p-6 rounded-xl shadow-lg border border-gray-700 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
           >
             <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-4">Update Lead</h3>
             <form onSubmit={handleUpdateLead} className="space-y-4">
-              {activeFields.map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm text-gray-300">
-                    {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  {field.name === 'courseName' ? (
-                    <select
-                      name="courseName"
-                      value={updateLead.courseName}
-                      onChange={(e) => handleInputChange(e, setUpdateLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    >
-                      <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
-                      {courseTypes.map((type) => (
-                        <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="relative">
-                      {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                      <input
-                        type={field.type}
-                        name={field.name}
-                        value={updateLead[field.name] || ''}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {activeFields.map((field) => (
+                  <div key={field.name} className="relative">
+                    <label className="block text-sm text-gray-300">
+                      {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
+                    </label>
+                    {field.name === 'courseName' ? (
+                      <select
+                        name="courseName"
+                        value={updateLead.courseName}
                         onChange={(e) => handleInputChange(e, setUpdateLead)}
-                        placeholder={field.name === 'phone' ? '1234567890' : undefined}
-                        className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                      >
+                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
+                        {courseTypes.map((type) => (
+                          <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
+                        ))}
+                      </select>
+                    ) : field.type === 'checkbox' ? (
+                      <div className="space-y-2">
+                        {field.options.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              name={field.name}
+                              value={option.value}
+                              checked={updateLead.customFields[field.name]?.includes(option.value) || false}
+                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                            />
+                            <label className="text-sm text-gray-300">{option.value}</label>
+                          </div>
+                        ))}
+                      </div>
+                    ) : field.type === 'radio' ? (
+                      <div className="space-y-2">
+                        {field.options.map((option) => (
+                          <div key={option.value} className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              name={field.name}
+                              value={option.value}
+                              checked={updateLead.customFields[field.name] === option.value}
+                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                            />
+                            <label className="text-sm text-gray-300">{option.value}</label>
+                          </div>
+                        ))}
+                      </div>
+                    ) : field.type === 'dropdown' ? (
+                      <select
+                        name={field.name}
+                        value={updateLead.customFields[field.name] || ''}
+                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                      >
+                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700 Waldorf Sans, sans-serif" disabled>Select an option</option>
+                        {field.options.map((option) => (
+                          <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
+                            {option.value}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        name={field.name}
+                        value={updateLead.customFields[field.name] || ''}
+                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        rows="4"
                       />
-                    </div>
-                  )}
-                  {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
-                </div>
-              ))}
-              {customFields.filter((field) => !selectedFieldsToRemove.includes(field.name)).map((field) => (
-                <div key={field.name}>
-                  <label className="block text-sm text-gray-300">
-                    {field.name} {field.required && <span className="text-red-500">*</span>}
-                  </label>
-                  {field.type === 'checkbox' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option) => (
-                        <div key={option.value} className="flex items-center space-x-2">
-                          <input
-                            type="checkbox"
-                            name={field.name}
-                            value={option.value}
-                            checked={updateLead.customFields[field.name]?.includes(option.value) || false}
-                            onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
-                            className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                          />
-                          <label className="text-sm text-gray-300">{option.value}</label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'radio' ? (
-                    <div className="space-y-2">
-                      {field.options.map((option) => (
-                        <div key={option.value} className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            name={field.name}
-                            value={option.value}
-                            checked={updateLead.customFields[field.name] === option.value}
-                            onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
-                            className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                          />
-                          <label className="text-sm text-gray-300">{option.value}</label>
-                        </div>
-                      ))}
-                    </div>
-                  ) : field.type === 'dropdown' ? (
-                    <select
-                      name={field.name}
-                      value={updateLead.customFields[field.name] || ''}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    >
-                      <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
-                      {field.options.map((option) => (
-                        <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
-                          {option.value}
-                        </option>
-                      ))}
-                    </select>
-                  ) : field.type === 'textarea' ? (
-                    <textarea
-                      name={field.name}
-                      value={updateLead.customFields[field.name] || ''}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                      rows="4"
-                    />
-                  ) : (
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                    />
-                  )}
-                  {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
-                </div>
-              ))}
+                    ) : field.type === 'file' ? (
+                      <div className="relative">
+                        <input
+                          type="file"
+                          name={field.name}
+                          onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                          className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        />
+                        {updateLead.customFields[field.name] && (
+                          <p className="text-gray-300 text-xs mt-1">Selected: {updateLead.customFields[field.name]}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative">
+                        {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                        <input
+                          type={field.type}
+                          name={field.name}
+                          value={defaultFields.some((df) => df.name === field.name) ? updateLead[field.name] || '' : updateLead.customFields[field.name] || ''}
+                          onChange={(e) => defaultFields.some((df) => df.name === field.name) ? handleInputChange(e, setUpdateLead) : handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
+                          placeholder={field.name === 'phone' ? '1234567890' : undefined}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        />
+                      </div>
+                    )}
+                    {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
+                  </div>
+                ))}
+              </div>
               <div className="flex justify-end space-x-2">
                 <button
                   type="button"
@@ -1320,6 +1465,7 @@ const Leads = () => {
         </motion.div>
       )}
 
+
       {isRemoveCourseModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -1384,7 +1530,7 @@ const Leads = () => {
         </motion.div>
       )}
 
-      {isDeleteModalOpen && (
+          {isDeleteModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
