@@ -97,12 +97,24 @@ const Leads = () => {
     );
   }, [courseTypes]);
 
+  // Reset courseName in newLead and updateLead if no longer valid
+  useEffect(() => {
+    setNewLead((prev) => ({
+      ...prev,
+      courseName: courseTypes.some((type) => type.value === prev.courseName) ? prev.courseName : '',
+    }));
+    setUpdateLead((prev) => ({
+      ...prev,
+      courseName: courseTypes.some((type) => type.value === prev.courseName) ? prev.courseName : '',
+    }));
+  }, [courseTypes]);
+
   // Filter and sort leads
   const filteredLeads = leads
     .filter((lead) => {
       const matchesSearch = !searchTerm || 
-        lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchTerm.toLowerCase());
+        (lead.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lead.email || '').toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCourseType = courseType === 'All' || lead.courseType === courseType;
       const leadDate = new Date(lead.registeredDate);
       const start = startDate ? new Date(startDate) : null;
@@ -110,7 +122,7 @@ const Leads = () => {
       const matchesDate = (!start || leadDate >= start) && (!end || leadDate <= end);
       return matchesSearch && matchesCourseType && matchesDate;
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
 
   // Handle form input changes
   const handleInputChange = (e, setLead) => {
@@ -430,6 +442,10 @@ const Leads = () => {
 
   // Handle deleting a field
   const handleDeleteField = (fieldName) => {
+    if (fieldName === 'name') {
+      setErrors({ delete: 'The "name" field cannot be deleted as it is required for sorting and filtering.' });
+      return;
+    }
     setCustomFields((prev) => prev.filter((field) => field.name !== fieldName));
     setDefaultFields((prev) => prev.filter((field) => field.name !== fieldName));
     setLeads((prevLeads) =>
@@ -483,6 +499,16 @@ const Leads = () => {
       return;
     }
     setCourseTypes(courseTypes.filter((type) => !selectedCoursesToRemove.includes(type.value)));
+    setLeads((prevLeads) =>
+      prevLeads.map((lead) =>
+        selectedCoursesToRemove.includes(lead.courseName)
+          ? { ...lead, courseName: null, courseType: null }
+          : lead
+      )
+    );
+    if (selectedCoursesToRemove.includes(courseType)) {
+      setCourseType('All');
+    }
     setSelectedCoursesToRemove([]);
     setErrors({});
     setIsRemoveCourseModalOpen(false);
@@ -810,7 +836,9 @@ const Leads = () => {
                           {field.name === 'registeredDate'
                             ? lead[field.name] ? new Date(lead[field.name]).toLocaleDateString() : 'Not registered'
                             : field.name === 'courseName'
-                            ? lead[field.name] || 'No course'
+                            ? courseTypes.some((type) => type.value === lead[field.name])
+                              ? lead[field.name]
+                              : 'No course'
                             : defaultFields.some((df) => df.name === field.name)
                             ? lead[field.name] || 'Not provided'
                             : field.type === 'checkbox' && Array.isArray(lead.customFields[field.name])
