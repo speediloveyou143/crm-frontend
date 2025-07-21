@@ -234,8 +234,8 @@ const Leads = () => {
             newErrors.phone = 'Phone number must be 10 digits';
           } else if (field.name === 'registeredDate' && !newLead.registeredDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
             newErrors.registeredDate = 'Date must be in YYYY-MM-DD format';
-          } else if (field.name === 'courseName' && !courseTypes.some((type) => type.value === newLead.courseName)) {
-            newErrors.courseName = 'Invalid course selected';
+          } else if (field.name === 'courseName' && (!newLead.courseName || !courseTypes.some((type) => type.value === newLead.courseName))) {
+            newErrors.courseName = 'Please select a valid course';
           }
         } else {
           if (field.type === 'checkbox' && (!newLead.customFields[field.name] || newLead.customFields[field.name].length === 0)) {
@@ -1445,6 +1445,7 @@ const Leads = () => {
         </motion.div>
       )}
 
+ 
       {isAddCourseModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
