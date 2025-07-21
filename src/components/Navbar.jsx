@@ -10,11 +10,12 @@ export default function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const location = useLocation();
-
-  const checkAuth = () => {
-    const token = Cookies.get("token");
+  const token = Cookies.get("token");
     const user = Cookies.get("user");
     console.log(user)
+
+  const checkAuth = () => {
+    
     if (token && user) {
       try {
         const userData = JSON.parse(user);
