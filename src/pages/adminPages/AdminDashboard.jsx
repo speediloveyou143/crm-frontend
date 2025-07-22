@@ -8,7 +8,7 @@ const AdminDashboard = () => {
     {
       icon: FiHome,
       text: 'All users',
-      path: '/dashboard/all-users',
+      path: '/dashboard/admin/all-users',
     },
   ];
 

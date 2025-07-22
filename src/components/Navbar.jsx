@@ -1,78 +1,23 @@
 import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
-import Cookies from "js-cookie";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userRole, setUserRole] = useState(null);
   const location = useLocation();
 
-  const checkAuth = () => {
-    const token = Cookies.get("token");
-    const user = Cookies.get("user");
-    console.log(user)
-    if (token && user) {
-      try {
-        const userData = JSON.parse(user);
-        setIsLoggedIn(true);
-        setUserRole(userData.role);
-      } catch (error) {
-        console.error("Invalid user data:", error);
-        setIsLoggedIn(false);
-        setUserRole(null);
-      }
-    } else {
-      setIsLoggedIn(false);
-      setUserRole(null);
-    }
-  };
 
-  useEffect(() => {
-    checkAuth(); // Initial check
-
-    const handleAuthChange = () => {
-      checkAuth();
-    };
-
-    window.addEventListener("authChange", handleAuthChange);
-    const handleScroll = () => setScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("authChange", handleAuthChange);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [location]);
-
-  const handleSignOut = () => {
-    Cookies.remove("token", { path: "/" });
-    Cookies.remove("user", { path: "/" });
-    setIsLoggedIn(false);
-    setUserRole(null);
-    setDropdownOpen(false);
-    setMobileMenuOpen(false);
-    window.dispatchEvent(new Event("authChange"));
-  };
-
-  const getDashboardLink = () => {
-    switch (userRole) {
-      case "user":
-        return { path: "/student-dashboard", label: "Student Dashboard" };
-      case "admin":
-        return { path: "/dashboard", label: "Admin Dashboard" };
-      case "mentor":
-        return { path: "/mentor-dashboard", label: "Mentor Dashboard" };
-      default:
-        return null;
-    }
-  };
-
-  const dashboard = getDashboardLink();
-
+  // Navigation links array
+  const navLinks = [
+    { path: "/features", label: "Features" },
+    { path: "/pricing", label: "Pricing" },
+    { path: "/about", label: "About" },
+    { path: "/contact", label: "Contact" },
+    { path: "/privacy-policy", label: "Privacy Policy" },
+  ];
+ 
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-300 ${
@@ -91,76 +36,54 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex space-x-8">
-            <Link
-              to="/features"
-              className="text-gray-300 hover:text-white text-sm font-medium"
-            >
-              Features
-            </Link>
-            <Link
-              to="/pricing"
-              className="text-gray-300 hover:text-white text-sm font-medium"
-            >
-              Pricing
-            </Link>
-            <Link
-              to="/about"
-              className="text-gray-300 hover:text-white text-sm font-medium"
-            >
-              About
-            </Link>
-            <Link
-              to="/contact"
-              className="text-gray-300 hover:text-white text-sm font-medium"
-            >
-              Contact
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.path}
+                to={link.path}
+                className="text-gray-300 hover:text-white text-sm font-medium"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            {isLoggedIn ? (
-              <div className="relative">
-                <button
-                  onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="text-white text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full p-1 hover:bg-gray-700 transition-all duration-200"
-                >
-                  <FaUserCircle />
-                </button>
-                {dropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg z-50 transform transition-all duration-200 ease-in-out animate-dropdown">
-                    {dashboard && (
-                      <Link
-                        to={dashboard.path}
-                        className="block px-4 py-2 text-gray-200 hover:bg-gray-700 hover:text-white rounded-t-md transition-colors duration-150"
-                      >
-                        {dashboard.label}
-                      </Link>
-                    )}
-                    <button
-                      onClick={handleSignOut}
-                      className="block w-full text-left px-4 py-2 text-gray-200 hover:bg-red-500 hover:text-white rounded-b-md transition-colors duration-150"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <Link
-                  to="/signin"
-                  className="text-gray-300 hover:text-white text-sm font-medium"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/signup"
-                  className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg"
-                >
-                  Get Started
-                </Link>
-              </>
-            )}
+            <Link
+              to="/signin"
+              className="text-gray-300 hover:text-white text-sm font-medium"
+            >
+              Sign In
+            </Link>
+            <Link
+              to="/signup"
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg"
+            >
+              Get Started
+            </Link>
+            <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="text-white text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full p-1 hover:bg-gray-700 transition-all duration-200"
+              >
+                <FaUserCircle />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg z-50 transform transition-all duration-200 ease-in-out animate-dropdown">
+                  <Link
+                    to="/dashboard"
+                    className="block px-4 py-2 text-gray-200 hover:bg-gray-700 hover:text-white rounded-t-md transition-colors duration-150"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/signout"
+                    className="block px-4 py-2 text-gray-200 hover:bg-red-500 hover:text-white rounded-b-md transition-colors duration-150"
+                  >
+                    Sign Out
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="md:hidden">
@@ -183,43 +106,28 @@ export default function Navbar() {
       </div>
 
       <div className={`md:hidden ${mobileMenuOpen ? "block" : "hidden"} bg-gray-900`}>
-        <Link to="/features" className="block px-4 py-2 text-gray-300 hover:text-white">
-          Features
-        </Link>
-        <Link to="/pricing" className="block px-4 py-2 text-gray-300 hover:text-white">
-          Pricing
-        </Link>
-        <Link to="/about" className="block px-4 py-2 text-gray-300 hover:text-white">
-          About
-        </Link>
-        <Link to="/contact" className="block px-4 py-2 text-gray-300 hover:text-white">
-          Contact
-        </Link>
+        {navLinks.map((link) => (
+          <Link
+            key={link.path}
+            to={link.path}
+            className="block px-4 py-2 text-gray-300 hover:text-white"
+          >
+            {link.label}
+          </Link>
+        ))}
         <div className="border-t border-gray-800 mt-2">
-          {isLoggedIn ? (
-            <>
-              {dashboard && (
-                <Link to={dashboard.path} className="block px-4 py-2 text-gray-300 hover:text-white">
-                  {dashboard.label}
-                </Link>
-              )}
-              <button
-                onClick={handleSignOut}
-                className="block w-full text-left px-4 py-2 text-gray-300 hover:text-white"
-              >
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <>
-              <Link to="/signin" className="block px-4 py-2 text-gray-300 hover:text-white">
-                Sign In
-              </Link>
-              <Link to="/signup" className="block px-4 py-2 text-white bg-blue-600 text-center">
-                Get Started
-              </Link>
-            </>
-          )}
+          <Link to="/signin" className="block px-4 py-2 text-gray-300 hover:text-white">
+            Sign In
+          </Link>
+          <Link to="/signup" className="block px-4 py-2 text-white bg-blue-600 text-center">
+            Get Started
+          </Link>
+          <Link to="/dashboard" className="block px-4 py-2 text-gray-300 hover:text-white">
+            Dashboard
+          </Link>
+          <Link to="/signout" className="block px-4 py-2 text-gray-300 hover:text-white">
+            Sign Out
+          </Link>
         </div>
       </div>
     </nav>
