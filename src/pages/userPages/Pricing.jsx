@@ -6,10 +6,10 @@ function Pricing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 font-sans text-gray-100">
       {/* Hero Section */}
-      <section className="py-24 bg-[url('https://source.unsplash.com/random/1920x1080/?business,technology')] bg-cover bg-center bg-no-repeat relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/60"></div>
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 animate-fade-in">
+      <section className="py-24 bg-[url('https://source.unsplash.com/random/1920x1080/?business,technology')] bg-cover bg-center bg-no-repeat relative overflow-hidden ">
+        <div className="absolute inset-0 bg-black/60 "></div>
+        <div className="container mx-auto px-4 relative z-10 text-center ">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 animate-fade-in ">
             <span className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
               Pricing That Scales
             </span>
@@ -332,79 +332,7 @@ function Pricing() {
       </section>
 
       {/* Footer */}
-      <footer className="footer p-12 bg-gradient-to-br from-gray-900 to-gray-800 text-gray-400 border-t border-gray-700">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-2xl font-bold text-white mb-6">JHC CRM</h3>
-              <p className="mb-6">Empowering businesses to build stronger customer relationships through innovative technology.</p>
-              <div className="flex space-x-6">
-                {['twitter', 'facebook', 'instagram', 'linkedin'].map((social) => (
-                  <a
-                    key={social}
-                    href="#"
-                    className="text-gray-500 hover:text-indigo-400 transition-colors duration-300"
-                  >
-                    <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                    </svg>
-                  </a>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-white mb-6">Product</h4>
-              <ul className="space-y-4">
-                {['Features', 'Pricing', 'Case Studies', 'Updates'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-white mb-6">Company</h4>
-              <ul className="space-y-4">
-                {['About Us', 'Careers', 'Contact', 'Blog'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold text-white mb-6">Support</h4>
-              <ul className="space-y-4">
-                {['Help Center', 'Documentation', 'Community', 'Status'].map((item) => (
-                  <li key={item}>
-                    <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                      {item}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-700 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p>© 2025 JHC CRM. All rights reserved.</p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                Terms of Service
-              </a>
-              <a href="#" className="hover:text-indigo-400 transition-colors duration-300">
-                Cookies
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+     
     </div>
   );
 }
