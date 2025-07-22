@@ -8,6 +8,7 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
 
+
   // Navigation links array
   const navLinks = [
     { path: "/features", label: "Features" },
@@ -16,7 +17,7 @@ export default function Navbar() {
     { path: "/contact", label: "Contact" },
     { path: "/privacy-policy", label: "Privacy Policy" },
   ];
-
+ 
   return (
     <nav
       className={`fixed w-full z-50 transition-all duration-300 ${

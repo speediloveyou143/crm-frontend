@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import AppLayout from "./layouts/AppLayout";
+import 'react-phone-number-input/style.css';
 import Signin from "./pages/Signin";
 import Signup from "./pages/Signup";
 import Home from "./pages/userPages/Home";
