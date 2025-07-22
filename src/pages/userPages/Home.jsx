@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function Home() {
   return (
     <div className="font-sans text-gray-100 bg-gray-950">
