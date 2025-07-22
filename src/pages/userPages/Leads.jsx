@@ -226,7 +226,11 @@ const Leads = () => {
     activeFields.forEach((field) => {
       if (field.required) {
         if (defaultFields.some((df) => df.name === field.name)) {
-          if (!newLead[field.name]) {
+          if (field.name === 'courseName') {
+            if (!newLead.courseName || !courseTypes.some((type) => type.value === newLead.courseName)) {
+              newErrors.courseName = 'Please select a valid course';
+            }
+          } else if (!newLead[field.name]) {
             newErrors[field.name] = `${field.name} is required`;
           } else if (field.name === 'email' && !newLead.email.match(/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/)) {
             newErrors.email = 'Invalid email address';
@@ -234,8 +238,6 @@ const Leads = () => {
             newErrors.phone = 'Phone number must be 10 digits';
           } else if (field.name === 'registeredDate' && !newLead.registeredDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
             newErrors.registeredDate = 'Date must be in YYYY-MM-DD format';
-          } else if (field.name === 'courseName' && (!newLead.courseName || !courseTypes.some((type) => type.value === newLead.courseName))) {
-            newErrors.courseName = 'Please select a valid course';
           }
         } else {
           if (field.type === 'checkbox' && (!newLead.customFields[field.name] || newLead.customFields[field.name].length === 0)) {
@@ -264,7 +266,11 @@ const Leads = () => {
     activeFields.forEach((field) => {
       if (field.required) {
         if (defaultFields.some((df) => df.name === field.name)) {
-          if (!updateLead[field.name]) {
+          if (field.name === 'courseName') {
+            if (!updateLead.courseName || !courseTypes.some((type) => type.value === updateLead.courseName)) {
+              newErrors.courseName = 'Please select a valid course';
+            }
+          } else if (!updateLead[field.name]) {
             newErrors[field.name] = `${field.name} is required`;
           } else if (field.name === 'email' && !updateLead.email.match(/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/)) {
             newErrors.email = 'Invalid email address';
@@ -272,8 +278,6 @@ const Leads = () => {
             newErrors.phone = 'Phone number must be 10 digits';
           } else if (field.name === 'registeredDate' && !updateLead.registeredDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
             newErrors.registeredDate = 'Date must be in YYYY-MM-DD format';
-          } else if (field.name === 'courseName' && !courseTypes.some((type) => type.value === updateLead.courseName)) {
-            newErrors.courseName = 'Invalid course selected';
           }
         } else {
           if (field.type === 'checkbox' && (!updateLead.customFields[field.name] || updateLead.customFields[field.name].length === 0)) {
@@ -306,7 +310,7 @@ const Leads = () => {
   const validateFieldForm = (field) => {
     const newErrors = {};
     if (!field.name.trim()) newErrors.name = 'Field name is required';
-    if (['radio', 'checkbox', 'dropdown'].includes(field.type) && field.options.length === 0) {
+    if (['radio', 'checkbox', 'dropdown'].includes(field.type) && field.name !== 'courseName' && field.options.length === 0) {
       newErrors.options = 'At least one option is required for radio, checkbox, or dropdown fields';
     }
     return newErrors;
@@ -525,7 +529,7 @@ const Leads = () => {
   const handleUpdateLead = (e) => {
     e.preventDefault();
     const newErrors = validateUpdateForm();
-    if (Object.keys(newErrors).length > 0) {
+    if (Object.keys(formErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
@@ -904,106 +908,108 @@ const Leads = () => {
             <form onSubmit={handleAddLead} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {activeFields.map((field) => (
-                  <div key={field.name} className="relative">
-                    <label className="block text-sm text-gray-300">
-                      {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
-                    </label>
-                    {field.name === 'courseName' ? (
-                      <select
-                        name="courseName"
-                        value={newLead.courseName}
-                        onChange={(e) => handleInputChange(e, setNewLead)}
-                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                      >
-                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
-                        {courseTypes.map((type) => (
-                          <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
-                        ))}
-                      </select>
-                    ) : field.type === 'checkbox' ? (
-                      <div className="space-y-2">
-                        {field.options.map((option) => (
-                          <div key={option.value} className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              name={field.name}
-                              value={option.value}
-                              checked={newLead.customFields[field.name]?.includes(option.value) || false}
-                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                            />
-                            <label className="text-sm text-gray-300">{option.value}</label>
-                          </div>
-                        ))}
-                      </div>
-                    ) : field.type === 'radio' ? (
-                      <div className="space-y-2">
-                        {field.options.map((option) => (
-                          <div key={option.value} className="flex items-center space-x-2">
-                            <input
-                              type="radio"
-                              name={field.name}
-                              value={option.value}
-                              checked={newLead.customFields[field.name] === option.value}
-                              onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                              className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
-                            />
-                            <label className="text-sm text-gray-300">{option.value}</label>
-                          </div>
-                        ))}
-                      </div>
-                    ) : field.type === 'dropdown' ? (
-                      <select
-                        name={field.name}
-                        value={newLead.customFields[field.name] || ''}
-                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                      >
-                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
-                        {field.options.map((option) => (
-                          <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
-                            {option.value}
-                          </option>
-                        ))}
-                      </select>
-                    ) : field.type === 'textarea' ? (
-                      <textarea
-                        name={field.name}
-                        value={newLead.customFields[field.name] || ''}
-                        onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                        className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                        rows="4"
-                      />
-                    ) : field.type === 'file' ? (
-                      <div className="relative">
-                        <input
-                          type="file"
+                  <div key={field.name} className="relative flex items-center space-x-2">
+                    <div className="flex-1">
+                      <label className="block text-sm text-gray-300">
+                        {field.name.charAt(0).toUpperCase() + field.name.slice(1)} {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      {field.name === 'courseName' ? (
+                        <select
+                          name="courseName"
+                          value={newLead.courseName}
+                          onChange={(e) => handleInputChange(e, setNewLead)}
+                          className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                        >
+                          <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select a course</option>
+                          {courseTypes.map((type) => (
+                            <option key={type.value} value={type.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">{type.value}</option>
+                          ))}
+                        </select>
+                      ) : field.type === 'checkbox' ? (
+                        <div className="space-y-2">
+                          {field.options.map((option) => (
+                            <div key={option.value} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                name={field.name}
+                                value={option.value}
+                                checked={newLead.customFields[field.name]?.includes(option.value) || false}
+                                onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                                className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                              />
+                              <label className="text-sm text-gray-300">{option.value}</label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : field.type === 'radio' ? (
+                        <div className="space-y-2">
+                          {field.options.map((option) => (
+                            <div key={option.value} className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                name={field.name}
+                                value={option.value}
+                                checked={newLead.customFields[field.name] === option.value}
+                                onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                                className="h-4 w-4 text-indigo-500 focus:ring-indigo-500 border-gray-600 rounded"
+                              />
+                              <label className="text-sm text-gray-300">{option.value}</label>
+                            </div>
+                          ))}
+                        </div>
+                      ) : field.type === 'dropdown' ? (
+                        <select
                           name={field.name}
+                          value={newLead.customFields[field.name] || ''}
                           onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
                           className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                        />
-                        {newLead.customFields[field.name] && (
-                          <p className="text-gray-300 text-xs mt-1">Selected: {newLead.customFields[field.name]}</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="relative">
-                        {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                        {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                        {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                        {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
-                        <input
-                          type={field.type}
+                        >
+                          <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
+                          {field.options.map((option) => (
+                            <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
+                              {option.value}
+                            </option>
+                          ))}
+                        </select>
+                      ) : field.type === 'textarea' ? (
+                        <textarea
                           name={field.name}
-                          value={defaultFields.some((df) => df.name === field.name) ? newLead[field.name] || '' : newLead.customFields[field.name] || ''}
-                          onChange={(e) => defaultFields.some((df) => df.name === field.name) ? handleInputChange(e, setNewLead) : handleCustomFieldChange(e, field.name, field.type, setNewLead)}
-                          placeholder={field.name === 'phone' ? '1234567890' : undefined}
-                          className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                          value={newLead.customFields[field.name] || ''}
+                          onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                          className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                          rows="4"
                         />
-                      </div>
-                    )}
-                    {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
-                    <div className="absolute right-0 top-0" ref={fieldDropdownRef}>
+                      ) : field.type === 'file' ? (
+                        <div className="relative">
+                          <input
+                            type="file"
+                            name={field.name}
+                            onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                            className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                          />
+                          {newLead.customFields[field.name] && (
+                            <p className="text-gray-300 text-xs mt-1">Selected: {newLead.customFields[field.name]}</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="relative">
+                          {field.name === 'name' && <FiUser className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                          {field.name === 'email' && <FiMail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                          {field.name === 'phone' && <FiPhone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                          {field.name === 'registeredDate' && <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />}
+                          <input
+                            type={field.type}
+                            name={field.name}
+                            value={defaultFields.some((df) => df.name === field.name) ? newLead[field.name] || '' : newLead.customFields[field.name] || ''}
+                            onChange={(e) => defaultFields.some((df) => df.name === field.name) ? handleInputChange(e, setNewLead) : handleCustomFieldChange(e, field.name, field.type, setNewLead)}
+                            placeholder={field.name === 'phone' ? '1234567890' : undefined}
+                            className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
+                          />
+                        </div>
+                      )}
+                      {errors[field.name] && <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>}
+                    </div>
+                    <div className="mt-6">
                       <motion.button
                         type="button"
                         onClick={() => setActiveFieldDropdown(activeFieldDropdown === field.name ? null : field.name)}
@@ -1205,21 +1211,6 @@ const Leads = () => {
             <h3 className="text-lg sm:text-xl font-semibold text-gray-200 mb-4">Update Field</h3>
             <form onSubmit={handleUpdateField} className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Field Type</label>
-                <select
-                  name="type"
-                  value={updateField.type}
-                  onChange={handleUpdateFieldChange}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
-                >
-                  {fieldTypeOptions.map((option) => (
-                    <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
                 <label className="block text-sm text-gray-300 mb-1">
                   Field Name <span className="text-red-500">*</span>
                 </label>
@@ -1233,7 +1224,7 @@ const Leads = () => {
                 />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
               </div>
-              {['radio', 'checkbox', 'dropdown'].includes(updateField.type) && (
+              {updateField.name !== 'courseName' && ['radio', 'checkbox', 'dropdown'].includes(updateField.type) && (
                 <div>
                   <label className="block text-sm text-gray-300 mb-1">
                     Options <span className="text-red-500">*</span>
@@ -1378,7 +1369,7 @@ const Leads = () => {
                         onChange={(e) => handleCustomFieldChange(e, field.name, field.type, setUpdateLead)}
                         className="w-full px-4 py-2 rounded-lg bg-gray-800/50 border border-gray-700 text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm sm:text-base"
                       >
-                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700 Waldorf Sans, sans-serif" disabled>Select an option</option>
+                        <option value="" className="hover:bg-gray-600 cursor-pointer bg-gray-700" disabled>Select an option</option>
                         {field.options.map((option) => (
                           <option key={option.value} value={option.value} className="hover:bg-gray-600 cursor-pointer bg-gray-700">
                             {option.value}
@@ -1445,7 +1436,6 @@ const Leads = () => {
         </motion.div>
       )}
 
- 
       {isAddCourseModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
@@ -1494,8 +1484,7 @@ const Leads = () => {
         </motion.div>
       )}
 
-
-      {isRemoveCourseModalOpen && (
+       {isRemoveCourseModalOpen && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
