@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import PrivacyPolicy from "./PrivacyPolicy";
 function Home() {
   return (
     <div className="min-h-screen from-blue-950 font-sans text-gray-100">
@@ -276,7 +278,8 @@ function Home() {
           <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p>© 2025 JHC CRM. All rights reserved.</p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <Link to='/privacy-policy' className="hover:text-white transition-colors">Privacy Policy</Link>
+              
               <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
               <a href="#" className="hover:text-white transition-colors">Cookies</a>
             </div>
