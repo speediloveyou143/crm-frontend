@@ -141,10 +141,11 @@ function Pricing() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 font-sans text-gray-100">
       {/* Hero Section */}
-      <section className="pt-24 bg-[url('https://source.unsplash.com/random/1920x1080/?business,technology')] bg-cover bg-center bg-no-repeat relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/60"></div>
-        <div className="container mx-auto px-4 relative z-10 text-center">
-          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 animate-fade-in">
+
+      <section className="py-24 bg-[url('https://source.unsplash.com/random/1920x1080/?business,technology')] bg-cover bg-center bg-no-repeat relative overflow-hidden ">
+        <div className="absolute inset-0 bg-black/60 "></div>
+        <div className="container mx-auto px-4 relative z-10 text-center ">
+          <h1 className="text-5xl md:text-6xl font-extrabold text-white mb-6 animate-fade-in ">
             <span className="bg-gradient-to-r from-indigo-400 to-purple-500 bg-clip-text text-transparent">
               Pricing That Scales
             </span>
