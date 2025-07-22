@@ -1,5 +1,6 @@
 import Navbar from "../components/Navbar";
 import { Outlet } from "react-router-dom";
+import Home from "../pages/userPages/Home";
 
 export default function AppLayout() {
   return (
