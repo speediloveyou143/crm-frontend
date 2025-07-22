@@ -12,25 +12,18 @@ function AllUsers() {
       email: 'john@example.com',
       phone: '1234567890',
       paid: true,
-      amountPaid: 5000,
-      totalAmount: 10000,
-      balance: 5000,
       tasks: ['Task 1', 'Task 2'],
       attendance: [
         { date: '2025-07-01', status: 'Present' },
         { date: '2025-07-02', status: 'Absent' },
       ],
     },
-    // Removed duplicate entries for brevity; ensure unique IDs in production
     {
       id: 2,
       name: 'Jane Smith',
       email: 'jane@example.com',
       phone: '0987654321',
       paid: false,
-      amountPaid: 0,
-      totalAmount: 10000,
-      balance: 10000,
       tasks: ['Task A', 'Task B'],
       attendance: [
         { date: '2025-07-01', status: 'Leave' },
@@ -46,17 +39,11 @@ function AllUsers() {
     email: '',
     phone: '',
     paid: false,
-    amountPaid: '',
-    totalAmount: '',
   });
   const [errors, setErrors] = useState({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteMemberId, setDeleteMemberId] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
-
-  // Calculate total batch income and balance
-  const totalIncome = members.reduce((sum, member) => sum + member.amountPaid, 0);
-  const totalBalance = members.reduce((sum, member) => sum + member.balance, 0);
 
   const validateForm = () => {
     const newErrors = {};
@@ -65,13 +52,6 @@ function AllUsers() {
       newErrors.email = 'Invalid email address';
     if (!formData.phone.match(/^\d{10}$/))
       newErrors.phone = 'Phone number must be 10 digits';
-    if (!formData.totalAmount || isNaN(formData.totalAmount) || formData.totalAmount <= 0)
-      newErrors.totalAmount = 'Total amount must be a positive number';
-    if (!formData.amountPaid && formData.paid) newErrors.amountPaid = 'Amount paid is required if paid is true';
-    if (formData.amountPaid && (isNaN(formData.amountPaid) || formData.amountPaid < 0))
-      newErrors.amountPaid = 'Amount paid must be a non-negative number';
-    if (formData.amountPaid && formData.totalAmount && parseFloat(formData.amountPaid) > parseFloat(formData.totalAmount))
-      newErrors.amountPaid = 'Amount paid cannot exceed total amount';
     return newErrors;
   };
 
@@ -88,9 +68,6 @@ function AllUsers() {
       email: formData.email,
       phone: formData.phone,
       paid: formData.paid,
-      amountPaid: parseFloat(formData.amountPaid) || 0,
-      totalAmount: parseFloat(formData.totalAmount),
-      balance: parseFloat(formData.totalAmount) - (parseFloat(formData.amountPaid) || 0),
       tasks: [],
       attendance: [],
     };
@@ -106,8 +83,6 @@ function AllUsers() {
       email: member.email,
       phone: member.phone,
       paid: member.paid,
-      amountPaid: member.amountPaid.toString(),
-      totalAmount: member.totalAmount.toString(),
     });
     setShowModal(true);
   };
@@ -127,9 +102,6 @@ function AllUsers() {
             email: formData.email,
             phone: formData.phone,
             paid: formData.paid,
-            amountPaid: parseFloat(formData.amountPaid) || 0,
-            totalAmount: parseFloat(formData.totalAmount),
-            balance: parseFloat(formData.totalAmount) - (parseFloat(formData.amountPaid) || 0),
           }
         : m
     );
@@ -139,9 +111,6 @@ function AllUsers() {
       email: formData.email,
       phone: formData.phone,
       paid: formData.paid,
-      amountPaid: parseFloat(formData.amountPaid) || 0,
-      totalAmount: parseFloat(formData.totalAmount),
-      balance: parseFloat(formData.totalAmount) - (parseFloat(formData.amountPaid) || 0),
     });
     setMembers(updatedMembers);
     resetForm();
@@ -197,8 +166,6 @@ function AllUsers() {
       email: '',
       phone: '',
       paid: false,
-      amountPaid: '',
-      totalAmount: '',
     });
     setEditMemberId(null);
     setShowModal(false);
@@ -209,34 +176,8 @@ function AllUsers() {
   };
 
   return (
-    <div className="flex items-center justify-center ">
+    <div className="flex items-center justify-center">
       <div className="w-full">
-        {/* Total Income and Balance */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Total Batch Income</p>
-                <p className="text-2xl font-bold text-white mt-1">₹{totalIncome.toLocaleString()}</p>
-              </div>
-              <div className="p-3 rounded-full bg-indigo-600 text-white">
-                <FiPlus className="text-xl" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-400">Total Balance</p>
-                <p className="text-2xl font-bold text-white mt-1">₹{totalBalance.toLocaleString()}</p>
-              </div>
-              <div className="p-3 rounded-full bg-red-600 text-white">
-                <FiPlus className="text-xl" />
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-white">Batch Members</h2>
           <div className="flex space-x-4">
@@ -256,8 +197,6 @@ function AllUsers() {
                   email: '',
                   phone: '',
                   paid: false,
-                  amountPaid: '',
-                  totalAmount: '',
                 });
                 setErrors({});
               }}
@@ -287,9 +226,6 @@ function AllUsers() {
                   <th className="p-2">Email</th>
                   <th className="p-2">Phone</th>
                   <th className="p-2">Paid</th>
-                  <th className="p-2">Total Amount</th>
-                  <th className="p-2">Amount Paid</th>
-                  <th className="p-2">Balance</th>
                   <th className="p-2">Tasks</th>
                   <th className="p-2">Attendance</th>
                   <th className="p-2">Actions</th>
@@ -322,9 +258,6 @@ function AllUsers() {
                         {member.paid ? 'Paid' : 'Not Paid'}
                       </span>
                     </td>
-                    <td className="p-2">₹{member.totalAmount.toLocaleString()}</td>
-                    <td className="p-2">₹{member.amountPaid.toLocaleString()}</td>
-                    <td className="p-2">₹{member.balance.toLocaleString()}</td>
                     <td className="p-2">
                       <button
                         onClick={() => navigate(`/dashboard/task`)}
@@ -427,33 +360,6 @@ function AllUsers() {
                       onChange={(e) => setFormData({ ...formData, paid: e.target.checked })}
                     />
                   </label>
-                </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-gray-300">Total Amount</span>
-                  </label>
-                  <input
-                    type="number"
-                    className={`input input-bordered w-full bg-gray-700 text-white ${errors.totalAmount ? 'input-error' : ''}`}
-                    value={formData.totalAmount}
-                    onChange={(e) => setFormData({ ...formData, totalAmount: e.target.value })}
-                    placeholder="10000"
-                  />
-                  {errors.totalAmount && <p className="text-error text-sm mt-1">{errors.totalAmount}</p>}
-                </div>
-                <div className="form-control">
-                  <label className="label">
-                    <span className="label-text text-gray-300">Amount Paid</span>
-                  </label>
-                  <input
-                    type="number"
-                    className={`input input-bordered w-full bg-gray-700 text-white ${errors.amountPaid ? 'input-error' : ''}`}
-                    value={formData.amountPaid}
-                    onChange={(e) => setFormData({ ...formData, amountPaid: e.target.value })}
-                    placeholder="5000"
-                    disabled={!formData.paid}
-                  />
-                  {errors.amountPaid && <p className="text-error text-sm mt-1">{errors.amountPaid}</p>}
                 </div>
                 <div className="flex justify-end space-x-3">
                   <button
