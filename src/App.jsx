@@ -11,6 +11,7 @@ import Features from "./pages/Features";
 import Batches from "./pages/adminPages/Batches";
 import AllUsers from "./pages/adminPages/AllUsers";
 import Pricing from "./pages/userPages/Pricing";
+import PrivacyPolicy from "./pages/userPages/PrivacyPolicy";
 import About from "./pages/userPages/About";
 import UserDashboard from "./pages/userPages/UserDashboard";
 import Dashboard from "./pages/userPages/Dashboard";
@@ -27,6 +28,7 @@ export default function App() {
             <Route path="pricing" element={<Pricing />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<ContactUs />} />
+            <Route path="privacy-policy" element={<PrivacyPolicy />} />
             <Route path="features" element={<Features/>}/>
          </Route>
         <Route path="/dashboard/admin" element={<AdminDashboard />}>
