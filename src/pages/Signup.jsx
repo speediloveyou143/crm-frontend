@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 const steps = ["businessType", "companyName", "userDetails", "password"];
@@ -30,7 +30,7 @@ function Signup() {
     if (step === 2) {
       if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
       if (!formData.email.match(/^[\w.-]+@[\w.-]+\.\w+$/)) newErrors.email = "Enter a valid email";
-      if (!formData.phone.match(/^\+?\d{10,15}$/)) newErrors.phone = "Enter a valid phone number";
+      if (!formData.phone || !formData.phone.match(/^\+\d{10,15}$/)) newErrors.phone = "Enter a valid phone number";
     }
     if (step === 3) {
       if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
@@ -51,11 +51,6 @@ function Signup() {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     setErrors({ ...errors, [name]: '' });
-  };
-
-  const handlePhoneChange = (value) => {
-    setFormData({ ...formData, phone: value });
-    setErrors({ ...errors, phone: '' });
   };
 
   const handleSubmit = async () => {
@@ -108,7 +103,7 @@ function Signup() {
               name="businessType"
               value={formData.businessType}
               onChange={handleChange}
-              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="">Select...</option>
               <option value="IT">IT</option>
@@ -131,7 +126,7 @@ function Signup() {
               value={formData.companyName}
               onChange={handleChange}
               placeholder="Your Company"
-              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
             {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
           </div>
@@ -149,7 +144,7 @@ function Signup() {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md"
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
             </div>
@@ -162,7 +157,7 @@ function Signup() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md"
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               />
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
             </div>
@@ -171,21 +166,16 @@ function Signup() {
                 Phone <span className="text-red-500">*</span>
               </label>
               <PhoneInput
-                country={'in'}
+              international
+                defaultCountry="IN"
                 value={formData.phone}
-                onChange={handlePhoneChange}
-                inputClass="!w-full"
-                inputStyle={{
-                  backgroundColor: '#374151',
-                  borderColor: '#4b5563',
-                  color: 'white',
-                  width: '100%',
-                  paddingTop: '0.5rem',
-                  paddingBottom: '0.5rem',
+                onChange={(value) => {
+                  setFormData({ ...formData, phone: value });
+                  setErrors({ ...errors, phone: '' });
                 }}
-                buttonStyle={{
-                  backgroundColor: '#374151',
-                  borderColor: '#4b5563'
+                className="[&>input]:bg-gray-700 [&>input]:text-white [&>input]:border-gray-600 [&>input]:rounded-r-md [&>input]:focus:ring-2 [&>input]:focus:ring-purple-500 [&>input]:focus:border-transparent [&>input]:h-10 [&>input]:py-2"
+                countrySelectProps={{
+                  className: 'bg-gray-700 border-gray-600 text-white rounded-l-md h-10',
                 }}
               />
               {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
@@ -206,7 +196,7 @@ function Signup() {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md"
+                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <button
                   type="button"
@@ -229,7 +219,7 @@ function Signup() {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md"
+                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 />
                 <button
                   type="button"
@@ -247,7 +237,7 @@ function Signup() {
         {/* Button */}
         <button
           onClick={nextStep}
-          className="mt-6 w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 flex items-center justify-center space-x-2"
+          className="mt-6 w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800"
         >
           <span className="text-sm sm:text-base font-medium">
             {step === steps.length - 1 ? 'Submit' : 'Next'}
