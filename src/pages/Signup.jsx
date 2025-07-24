@@ -1,164 +1,250 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import PhoneInput from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
+
+const steps = ["businessType", "companyName", "userDetails", "password"];
 
 function Signup() {
+  const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
-    name: '',
+    businessType: '',
+    companyName: '',
+    fullName: '',
     email: '',
+    phone: '',
     password: '',
-    confirmPassword: '',
-    phone_number: '', // Changed from 'mobile' to match backend
+    confirmPassword: ''
   });
   const [errors, setErrors] = useState({});
-  const [successMessage, setSuccessMessage] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
-  const validateForm = () => {
+  const validateStep = () => {
     const newErrors = {};
-    if (!formData.name.trim()) newErrors.name = 'Name is required';
-    if (!formData.email.match(/^[\w-]+@([\w-]+\.)+[\w-]{2,4}$/))
-      newErrors.email = 'Invalid email address';
-    if (formData.password.length < 6)
-      newErrors.password = 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword)
-      newErrors.confirmPassword = 'Passwords do not match';
-    if (!formData.phone_number.match(/^\d{10}$/))
-      newErrors.phone_number = 'Mobile number must be 10 digits';
-    return newErrors;
+    if (step === 0 && !formData.businessType) newErrors.businessType = "Please select a business type";
+    if (step === 1 && !formData.companyName.trim()) newErrors.companyName = "Company name is required";
+    if (step === 2) {
+      if (!formData.fullName.trim()) newErrors.fullName = "Full name is required";
+      if (!formData.email.match(/^[\w.-]+@[\w.-]+\.\w+$/)) newErrors.email = "Enter a valid email";
+      if (!formData.phone || !formData.phone.match(/^\+\d{10,15}$/)) newErrors.phone = "Enter a valid phone number";
+    }
+    if (step === 3) {
+      if (formData.password.length < 6) newErrors.password = "Password must be at least 6 characters";
+      if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validateForm();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
+  const nextStep = () => {
+    if (validateStep()) {
+      if (step < steps.length - 1) setStep((prev) => prev + 1);
+      else handleSubmit();
     }
+  };
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: '' });
+  };
+
+  const handleSubmit = async () => {
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/users/signup', {
-        name: formData.name,
-        email: formData.email,
-        phone_number: formData.phone_number,
-        password: formData.password,
-      }, {
-        withCredentials: true,
-      });
+      const res = await fetch("https://ipapi.co/json/");
+      const data = await res.json();
+      const locationArray = [
+        data.city,
+        data.region,
+        data.country_name,
+        data.latitude,
+        data.longitude
+      ];
 
-      if (response.status === 201) {
-        setSuccessMessage('Signup successful! Redirecting to sign in...');
-        setFormData({ name: '', email: '', password: '', confirmPassword: '', phone_number: '' });
-        setErrors({});
-        setTimeout(() => {
-          navigate('/signin');
-        }, 2000);
-      }
-    } catch (error) {
-      setErrors({ api: error.response?.data?.message || 'An error occurred during signup' });
+      const finalData = {
+        ...formData,
+        location: locationArray
+      };
+
+      console.log("Form Submitted:", finalData);
+      navigate("/signin");
+    } catch (err) {
+      console.error("Location fetch failed:", err);
     }
   };
 
   return (
-    <div className="min-h-screen mt-5 bg-gray-900 text-white flex items-center justify-center">
-      <section className="py-16 w-full">
-        <div className="container mx-auto px-4 max-w-md">
-          <div className="card bg-gray-800 shadow-2xl rounded-2xl p-8">
-            <h2 className="text-3xl font-bold text-center mb-6 text-white">Sign Up</h2>
-            {successMessage && (
-              <div className="alert alert-success mb-4 animate-fade-in">
-                <svg className="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                <span className="text-green-400 font-medium">{successMessage}</span>
-              </div>
-            )}
-            {errors.api && (
-              <div className="alert alert-error mb-4">
-                <span className="text-red-400">{errors.api}</span>
-              </div>
-            )}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-300">Full Name</span>
-                </label>
-                <input
-                  type="text"
-                  className={`input input-bordered w-full bg-gray-700 text-white ${errors.name ? 'input-error' : ''}`}
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="John Doe"
-                />
-                {errors.name && <p className="text-error text-sm mt-1">{errors.name}</p>}
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-300">Email</span>
-                </label>
-                <input
-                  type="email"
-                  className={`input input-bordered w-full bg-gray-700 text-white ${errors.email ? 'input-error' : ''}`}
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="email@example.com"
-                />
-                {errors.email && <p className="text-error text-sm mt-1">{errors.email}</p>}
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-300">Password</span>
-                </label>
-                <input
-                  type="password"
-                  className={`input input-bordered w-full bg-gray-700 text-white ${errors.password ? 'input-error' : ''}`}
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="••••••"
-                />
-                {errors.password && <p className="text-error text-sm mt-1">{errors.password}</p>}
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-300">Confirm Password</span>
-                </label>
-                <input
-                  type="password"
-                  className={`input input-bordered w-full bg-gray-700 text-white ${errors.confirmPassword ? 'input-error' : ''}`}
-                  value={formData.confirmPassword}
-                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                  placeholder="••••••"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-error text-sm mt-1">{errors.confirmPassword}</p>
-                )}
-              </div>
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text text-gray-300">Mobile Number</span>
-                </label>
-                <input
-                  type="text"
-                  className={`input input-bordered w-full bg-gray-700 text-white ${errors.phone_number ? 'input-error' : ''}`}
-                  value={formData.phone_number}
-                  onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                  placeholder="1234567890"
-                />
-                {errors.phone_number && <p className="text-error text-sm mt-1">{errors.phone_number}</p>}
-              </div>
-              <button type="submit" className="btn btn-primary w-full rounded-full bg-indigo-600 hover:bg-indigo-500">
-                Sign Up
-              </button>
-            </form>
-            <p className="text-center text-gray-300 mt-4">
-              Already have an account?{' '}
-              <Link to="/signin" className="text-indigo-400 hover:underline">
-                Sign In
-              </Link>
-            </p>
+    <div className="min-h-screen bg-[#111827] flex items-center justify-center px-4 py-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-[#1f2937] rounded-xl shadow-2xl p-6 sm:p-8 w-full max-w-sm sm:max-w-md"
+      >
+        <h2 className="text-xl sm:text-2xl font-bold mb-2 text-white">Let's get started</h2>
+        <p className="text-gray-400 mb-6 text-sm sm:text-base">
+          {step === 0 && "Select your business type"}
+          {step === 1 && "Enter your company name"}
+          {step === 2 && "Provide your personal details"}
+          {step === 3 && "Create a secure password"}
+        </p>
+
+        {/* Step 0 */}
+        {step === 0 && (
+          <div>
+            <label className="block mb-1 font-medium text-gray-300">
+              Business Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              name="businessType"
+              value={formData.businessType}
+              onChange={handleChange}
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="">Select...</option>
+              <option value="IT">IT</option>
+              <option value="Retail">Retail</option>
+              <option value="Education">Education</option>
+            </select>
+            {errors.businessType && <p className="text-red-500 text-sm mt-1">{errors.businessType}</p>}
           </div>
-        </div>
-      </section>
+        )}
+
+        {/* Step 1 */}
+        {step === 1 && (
+          <div>
+            <label className="block mb-1 font-medium text-gray-300">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="companyName"
+              value={formData.companyName}
+              onChange={handleChange}
+              placeholder="Your Company"
+              className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            />
+            {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
+          </div>
+        )}
+
+        {/* Step 2 */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 font-medium text-gray-300">
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              {errors.fullName && <p className="text-red-500 text-sm mt-1">{errors.fullName}</p>}
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-gray-300">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              />
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+            </div>
+            <div>
+              <label className="block mb-1 font-medium text-gray-300">
+                Phone <span className="text-red-500">*</span>
+              </label>
+              <PhoneInput
+              international
+                defaultCountry="IN"
+                value={formData.phone}
+                onChange={(value) => {
+                  setFormData({ ...formData, phone: value });
+                  setErrors({ ...errors, phone: '' });
+                }}
+                className="[&>input]:bg-gray-700 [&>input]:text-white [&>input]:border-gray-600 [&>input]:rounded-r-md [&>input]:focus:ring-2 [&>input]:focus:ring-purple-500 [&>input]:focus:border-transparent [&>input]:h-10 [&>input]:py-2"
+                countrySelectProps={{
+                  className: 'bg-gray-700 border-gray-600 text-white rounded-l-md h-10',
+                }}
+              />
+              {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Step 3 */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 font-medium text-gray-300">
+                Create Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(prev => !prev)}
+                  className="absolute right-2 top-2 text-gray-300 hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+            </div>
+
+            <div>
+              <label className="block mb-1 font-medium text-gray-300">
+                Confirm Password <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  className="w-full p-2 pr-10 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(prev => !prev)}
+                  className="absolute right-2 top-2 text-gray-300 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
+            </div>
+          </div>
+        )}
+
+        {/* Button */}
+        <button
+          onClick={nextStep}
+          className="mt-6 w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-200 flex items-center justify-center space-x-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+        >
+          <span className="text-sm sm:text-base font-medium">
+            {step === steps.length - 1 ? 'Submit' : 'Next'}
+          </span>
+          <ArrowRight size={18} className="mt-[1px]" />
+        </button>
+      </motion.div>
     </div>
   );
 }

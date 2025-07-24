@@ -88,7 +88,7 @@ export default function Features() {
                   <span className={`text-xs font-medium ${feature?.badge?.color}`}>{feature?.badge?.label}</span>
                   <span className="text-xs text-gray-400">{feature?.badge?.subLabel}</span>
                 </div>
-              )}
+              )}   
             </div>
           ))}
         </div>
