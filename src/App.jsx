@@ -6,16 +6,14 @@ import Signup from "./pages/Signup";
 import Home from "./pages/userPages/Home";
 import AdminDashboard from "./pages/adminPages/AdminDashboard";
 
-import Batches from "./pages/adminPages/Batches";
 import AllUsers from "./pages/adminPages/AllUsers";
-import ViewAttendance from "./pages/adminPages/ViewAttendance";
-import AllTasks from "./pages/adminPages/AllTasks";
-import Task from "./pages/adminPages/Task";
+
 import Pricing from "./pages/userPages/Pricing";
 import About from "./pages/userPages/About";
 import UserDashboard from "./pages/userPages/UserDashboard";
 import Dashboard from "./pages/userPages/Dashboard";
 import Leads from "./pages/userPages/Leads";
+import Features from "./pages/Features";
 export default function App() {
   return (
     <Router>
