@@ -1,6 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
+// import { Link} from "react-router-dom";
 import { useState } from "react";
 import { FaUserCircle } from "react-icons/fa";
+import Cookies from "js-cookie"
+import axios from "axios"
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -8,6 +11,8 @@ export default function Navbar() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const location = useLocation();
 
+  const token=Cookies.get("token")
+  const id=Cookies.get("id")
 
   // Navigation links array
   const navLinks = [
@@ -17,6 +22,12 @@ export default function Navbar() {
     { path: "/contact", label: "Contact" },
     { path: "/privacy-policy", label: "Privacy Policy" },
   ];
+  async function handlelogout(){
+    const response=await axios.post(`${import.meta.env.VITE_BACKEND_ORIGIN}/api/users/signout`,{},{withCredentials:true})
+    setTimeout(()=>{
+      window.location.reload()
+    },800)
+  }
  
   return (
     <nav
@@ -48,7 +59,33 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            <Link
+            {token&&id?<>
+             <div className="relative">
+              <button
+                onClick={() => setDropdownOpen(!dropdownOpen)}
+                className="text-white text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full p-1 hover:bg-gray-700 transition-all duration-200"
+              >
+                <FaUserCircle />
+              </button>
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg z-50 transform transition-all duration-200 ease-in-out animate-dropdown">
+                  <Link
+                    to="/dashboard/user"
+                    className="block px-4 py-2 text-gray-200 hover:bg-gray-700 hover:text-white rounded-t-md transition-colors duration-150"
+                  >
+                    Dashboard
+                  </Link>
+                  <Link
+                    to="/"
+                    onClick={handlelogout}
+                    className="block px-4 py-2 text-gray-200 hover:bg-red-500 hover:text-white rounded-b-md transition-colors duration-150"
+                  >
+                    Sign Out
+                  </Link>
+                </div>
+              )}
+            </div>
+            </>:<><Link
               to="/signin"
               className="text-gray-300 hover:text-white text-sm font-medium"
             >
@@ -59,31 +96,11 @@ export default function Navbar() {
               className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white px-6 py-2 rounded-full text-sm font-medium shadow-lg"
             >
               Get Started
-            </Link>
-            <div className="relative">
-              <button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="text-white text-xl focus:outline-none focus:ring-2 focus:ring-blue-400 rounded-full p-1 hover:bg-gray-700 transition-all duration-200"
-              >
-                <FaUserCircle />
-              </button>
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-md shadow-lg z-50 transform transition-all duration-200 ease-in-out animate-dropdown">
-                  <Link
-                    to="/dashboard"
-                    className="block px-4 py-2 text-gray-200 hover:bg-gray-700 hover:text-white rounded-t-md transition-colors duration-150"
-                  >
-                    Dashboard
-                  </Link>
-                  <Link
-                    to="/signout"
-                    className="block px-4 py-2 text-gray-200 hover:bg-red-500 hover:text-white rounded-b-md transition-colors duration-150"
-                  >
-                    Sign Out
-                  </Link>
-                </div>
-              )}
-            </div>
+            </Link></>
+            
+
+            }
+           
           </div>
 
           <div className="md:hidden">
@@ -125,7 +142,7 @@ export default function Navbar() {
           <Link to="/dashboard" className="block px-4 py-2 text-gray-300 hover:text-white">
             Dashboard
           </Link>
-          <Link to="/signout" className="block px-4 py-2 text-gray-300 hover:text-white">
+          <Link to="/signout"  className="block px-4 py-2 text-gray-300 hover:text-white">
             Sign Out
           </Link>
         </div>
