@@ -58,29 +58,47 @@ function Signup() {
       const res = await fetch("https://ipapi.co/json/");
       const data = await res.json();
 
-      const locationObject = {
-        place: data.city,
-        state: data.region,
-        country: data.country_name,
-        latitude: data.latitude,
-        longitude: data.longitude
-      };
-
       const finalData = {
-        ...formData,
-        location: locationObject
+        name: formData.fullName,
+        email: formData.email,
+        phone_number: formData.phone.replace(/\s+/g, ''),
+        password: formData.password,
+        location: {
+          city: data.city || "Anantapur",
+          state: data.region || "Andhra Pradesh",
+            latitude: data.latitude || 0,
+            longitude: data.longitude || 0,
+        },
+        business_Type: formData.businessType || "Software Services",
+        company_Name: formData.companyName || "Tezhire Solutions"
       };
 
-      console.log("Form Submitted:", finalData);
-      navigate("/signin");
+      const response = await fetch("https://jsonplaceholder.typicode.com/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(finalData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("✅ POST Success:", result);
+        alert("Signup successful!");
+        navigate("/signin");
+      } else {
+        console.error("❌ POST failed:", response.status);
+        alert("Something went wrong during signup.");
+      }
     } catch (err) {
-      console.error("Location fetch failed:", err);
+      console.error("❌ Location fetch failed:", err);
+      alert("Location fetch failed. Try again.");
     }
   };
 
   return (
     <div className="min-h-screen bg-[#111827] flex flex-col items-center justify-center px-4 py-8">
-      
+      {/* Progress Bar */}
       <div className="w-full max-w-sm sm:max-w-md mb-6 relative">
         <div className="absolute top-3 left-0 right-0 h-0.5 bg-gray-600 z-0" />
         <div
@@ -104,7 +122,7 @@ function Signup() {
         </div>
       </div>
 
-      
+      {/* Form Container */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -122,7 +140,7 @@ function Signup() {
           {step === 3 && "Create a secure password"}
         </p>
 
-        
+        {/* Step 0 */}
         {step === 0 && (
           <div>
             <label className="block mb-1 font-medium text-gray-300">
@@ -135,7 +153,7 @@ function Signup() {
               className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             >
               <option value="">Select...</option>
-              <option value="IT">IT</option>
+              <option value="Software Services">Software Services</option>
               <option value="Retail">Retail</option>
               <option value="Education">Education</option>
             </select>
@@ -143,7 +161,7 @@ function Signup() {
           </div>
         )}
 
-        
+        {/* Step 1 */}
         {step === 1 && (
           <div>
             <label className="block mb-1 font-medium text-gray-300">
@@ -154,14 +172,14 @@ function Signup() {
               name="companyName"
               value={formData.companyName}
               onChange={handleChange}
-              placeholder="Your Company"
+              placeholder="Tezhire Solutions"
               className="w-full p-2 border border-gray-600 bg-gray-700 text-white rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
             {errors.companyName && <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>}
           </div>
         )}
 
-        
+        {/* Step 2 */}
         {step === 2 && (
           <div className="space-y-4">
             <div>
@@ -212,7 +230,7 @@ function Signup() {
           </div>
         )}
 
-        
+        {/* Step 3 */}
         {step === 3 && (
           <div className="space-y-4">
             <div>
@@ -263,7 +281,7 @@ function Signup() {
           </div>
         )}
 
-        
+        {/* Navigation Buttons */}
         <div className="mt-6 flex justify-between space-x-4">
           <button
             onClick={() => step > 0 && setStep(step - 1)}
@@ -288,7 +306,6 @@ function Signup() {
         </div>
       </motion.div>
 
-      
       <p className="text-sm text-white mt-4">
         Already have an account?{' '}
         <span
