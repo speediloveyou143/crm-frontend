@@ -52,7 +52,7 @@ const features = [
 
 export default function Features() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-gray-900 to-gray-800 py-12 px-4 sm:px-6 lg:px-8 font-sans text-gray-100 mt-[5.5%]">
+    <div className="min-h-screen bg-gradient-to-br from-blue-950 via-gray-900 to-gray-800 py-12 px-4 sm:px-6 lg:px-8 font-sans text-gray-100 mt-[4%]">
       <div className="max-w-7xl mx-auto">
         {/* Header Section */}
         <div className="text-center mb-20 m-10">

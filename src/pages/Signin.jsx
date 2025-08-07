@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { isValidPhoneNumber } from 'react-phone-number-input';
-
 import Cookies from 'js-cookie';
 import PhoneInput from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
@@ -14,10 +13,81 @@ function Signin() {
     mobile: '',
     otp: Array(6).fill(''),
   });
+ 
 
   const [errors, setErrors] = useState({});
   const [showOtp, setShowOtp] = useState(false);
   const navigate = useNavigate();
+
+  // Load Google Identity Services script dynamically
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleSignIn;
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  // Initialize Google Sign-In
+  const initializeGoogleSignIn = () => {
+    window.google.accounts.id.initialize({
+      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+      callback: handleGoogleSuccess,
+    });
+    window.google.accounts.id.renderButton(
+      document.getElementById('googleSignInButton'),
+      {
+        theme: 'outline',
+        size: 'large',
+        shape: 'pill',
+        text: 'continue_with',
+        width: '100%',
+      }
+    );
+  };
+
+  // Handle Google Sign-In success
+  const handleGoogleSuccess = async(response) => {
+    try {
+      const userInfo = decodeJwt(response.credential);
+      const GoogleUserData= {
+        userId: userInfo.sub,
+        name: userInfo.name,
+        email: userInfo.email,
+        picture: userInfo.picture,
+      };
+      console.log(GoogleUserData)
+      const result=await axios.post(`${import.meta.env.VITE_BACKEND_ORIGIN}/api/users/signIn-With-Google`,GoogleUserData,{withCredentials:true})
+      console.log(result)
+      setTimeout(()=>{
+         setErrors({ api: 'Google Sign-In Successfull'});
+         navigate('/')
+         window.location.reload()
+      },800)
+      
+    } catch (error) {
+      console.error('Error decoding Google token:', error);
+      setErrors({ api: 'Google Sign-In failed' });
+    }
+  };
+
+  // Decode JWT token manually
+  const decodeJwt = (token) => {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  };
 
   const validateEmailForm = () => {
     const newErrors = {};
@@ -28,16 +98,15 @@ function Signin() {
     return newErrors;
   };
 
- const validateMobileForm = () => {
-  const newErrors = {};
-  if (!formData.mobile) {
-    newErrors.mobile = 'Mobile number is required';
-  } else if (!isValidPhoneNumber(formData.mobile)) {
-    newErrors.mobile = 'Invalid mobile number';
-  }
-  return newErrors;
-};
-
+  const validateMobileForm = () => {
+    const newErrors = {};
+    if (!formData.mobile) {
+      newErrors.mobile = 'Mobile number is required';
+    } else if (!isValidPhoneNumber(formData.mobile)) {
+      newErrors.mobile = 'Invalid mobile number';
+    }
+    return newErrors;
+  };
 
   const validateOtpForm = () => {
     const newErrors = {};
@@ -62,12 +131,18 @@ function Signin() {
       }, {
         withCredentials: true,
       });
+      console.log(response?.data?.user?.role)
 
       Cookies.set('user', JSON.stringify(response.data.user), { expires: 1, path: '/' });
       setErrors({});
       setFormData({ ...formData, email: '', password: '' });
       window.dispatchEvent(new Event('authChange'));
-      navigate('/dashboard');
+      setTimeout(()=>{
+        navigate("/")
+        window.location.reload()
+      },800)
+     
+      
     } catch (error) {
       setErrors({ api: error.response?.data?.message || 'Signin failed' });
     }
@@ -111,7 +186,7 @@ function Signin() {
     setFormData({ ...formData, mobile: '', otp: Array(6).fill('') });
     setErrors({});
     setShowOtp(false);
-    navigate('/dashboard');
+    navigate('/dashboard/user');
   };
 
   return (
@@ -200,9 +275,11 @@ function Signin() {
                   </button>
                 </form>
                 <div className="divider text-gray-400">OR</div>
-                <button className="btn btn-outline w-full rounded-full border-gray-600 text-gray-300 hover:bg-gray-700">
-                  Continue with Google
-                </button>
+                {/* Google Sign-In Button */}
+                <div
+                  id="googleSignInButton"
+                  style={{ width: '100%' }}
+                ></div>
                 <p className="text-center text-gray-300 mt-4">
                   Don't have an account?{' '}
                   <Link to="/signup" className="text-indigo-400 hover:underline">
