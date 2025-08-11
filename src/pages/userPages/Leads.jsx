@@ -525,26 +525,26 @@ const Leads = () => {
     setIsUpdateModalOpen(true);
   };
 
-  // Handle updating a lead
-  const handleUpdateLead = (e) => {
-    e.preventDefault();
-    const newErrors = validateUpdateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    const courseType = updateLead.courseName;
-    const updatedLead = { ...updateLead, courseType };
-    setLeads(leads.map((lead) =>
-      lead.id === updateLead.id ? updatedLead : lead
-    ));
-    setSelectedLeads(selectedLeads.map((selected) =>
-      selected.id === updateLead.id ? updatedLead : selected
-    ));
-    setUpdateLead({ id: null, name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
-    setErrors({});
-    setIsUpdateModalOpen(false);
-  };
+// Handle updating a lead
+const handleUpdateLead = (e) => {
+  e.preventDefault();
+  const newErrors = validateUpdateForm();
+  if (Object.keys(newErrors).length > 0) {
+    setErrors(newErrors);
+    return;
+  }
+  const courseType = updateLead.courseName;
+  const updatedLead = { ...updateLead, courseType };
+  setLeads(leads.map((lead) =>
+    lead.id === updateLead.id ? updatedLead : lead
+  ));
+  setSelectedLeads(selectedLeads.map((selected) =>
+    selected.id === updateLead.id ? updatedLead : selected
+  ));
+  setUpdateLead({ id: null, name: '', email: '', phone: '', registeredDate: '', courseName: '', customFields: {} });
+  setErrors({});
+  setIsUpdateModalOpen(false);
+};
 
   // Handle delete button click
   const handleDeleteClick = (lead) => {

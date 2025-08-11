@@ -10,12 +10,14 @@ import ContactUs from "./pages/ContactUs";
 import Features from "./pages/Features";
 import Batches from "./pages/adminPages/Batches";
 import AllUsers from "./pages/adminPages/AllUsers";
+
 import Pricing from "./pages/userPages/Pricing";
 import PrivacyPolicy from "./pages/userPages/PrivacyPolicy";
 import About from "./pages/userPages/About";
 import UserDashboard from "./pages/userPages/UserDashboard";
 import Dashboard from "./pages/userPages/Dashboard";
 import Leads from "./pages/userPages/Leads";
+import Features from "./pages/Features";
 export default function App() {
   return (
     <Router>
