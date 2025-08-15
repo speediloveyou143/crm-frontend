@@ -7,8 +7,6 @@ import Home from "./pages/userPages/Home";
 import AdminDashboard from "./pages/adminPages/AdminDashboard";
 import ContactUs from "./pages/ContactUs";
 
-import Features from "./pages/Features";
-import Batches from "./pages/adminPages/Batches";
 import AllUsers from "./pages/adminPages/AllUsers";
 
 import Pricing from "./pages/userPages/Pricing";
